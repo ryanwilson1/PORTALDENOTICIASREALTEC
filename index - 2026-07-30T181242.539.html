@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="claro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>Inteligência Operacional · Realtec Engenharia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   SISTEMA DE DESIGN — escala 4px, uma gramática para tudo
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  /* superfícies */
+  --sup-0:#F6F8FB;   /* fundo da página */
+  --sup-1:#FFFFFF;   /* cartão */
+  --sup-2:#F1F5F9;   /* realce sutil */
+  --sup-lei:#FCFBF8; /* papel — só texto oficial */
+
+  /* linhas */
+  --l-1:#E6EBF2;     /* divisória */
+  --l-2:#D2DBE6;     /* borda de controle */
+
+  /* texto */
+  --t-1:#0D1826;     /* principal */
+  --t-2:#526277;     /* secundário */
+  --t-3:#8494A8;     /* terciário */
+
+  /* marca */
+  --m-900:#08203A;
+  --m-700:#123A5E;
+  --az:#1B6BD6;
+  --az-f:#1454AE;
+  --az-bg:#EDF4FD;
+
+  /* estados — usados só em pontos pequenos */
+  --vm:#C0332B; --vm-bg:#FDF0EF;
+  --am:#B0620E; --am-bg:#FDF4EA;
+  --vd:#137A50; --vd-bg:#E9F7F0;
+
+  --sombra:0 1px 2px rgba(13,24,38,.05);
+  --sombra-m:0 4px 16px -6px rgba(13,24,38,.14),0 1px 3px rgba(13,24,38,.06);
+  --sombra-g:0 24px 60px -16px rgba(8,32,58,.24),0 4px 12px rgba(8,32,58,.08);
+
+  --r-g:14px; --r-m:10px; --r-p:7px;
+  --lat:236px;
+  --tr:150ms cubic-bezier(.2,0,0,1);
+  --sb:env(safe-area-inset-bottom,0px);
+}
+html[data-tema="escuro"]{
+  --sup-0:#0A0E15; --sup-1:#131A24; --sup-2:#1A2330; --sup-lei:#161D28;
+  --l-1:#242E3C; --l-2:#34404F;
+  --t-1:#E9EEF5; --t-2:#98A8BC; --t-3:#6F7F94;
+  --m-900:#D8E4F2; --m-700:#A9C1DC;
+  --az:#4E93EE; --az-f:#6BA6F5; --az-bg:#152538;
+  --vm:#EE8078; --vm-bg:#2A1514;
+  --am:#E39D5F; --am-bg:#291B10;
+  --vd:#5CC698; --vd-bg:#0E2219;
+  --sombra:none;
+  --sombra-m:0 4px 16px -6px rgba(0,0,0,.5);
+  --sombra-g:0 24px 60px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--sup-0);color:var(--t-1);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  transition:background var(--tr),color var(--tr)}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--az);outline-offset:2px;border-radius:5px}
+.ic{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ic-p{width:15px;height:15px}.ic-g{width:22px;height:22px}
+.num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* ─────────── ESTRUTURA ─────────── */
+.app{display:flex;min-height:100vh}
+
+.lat{width:var(--lat);flex:none;background:var(--sup-1);border-right:1px solid var(--l-1);
+  position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.lat-topo{padding:18px 16px 14px;display:flex;align-items:center;gap:10px}
+.logo{width:30px;height:30px;flex:none;border-radius:8px;background:var(--m-900);color:#fff;
+  display:grid;place-items:center;font-weight:700;font-size:11.5px;letter-spacing:-.02em}
+html[data-tema="escuro"] .logo{background:var(--az);color:#0A0E15}
+.lat-topo b{display:block;font-size:12.5px;font-weight:600;line-height:1.25;letter-spacing:-.01em}
+.lat-topo s{display:block;font-size:10.5px;color:var(--t-3);text-decoration:none}
+.lat-nav{flex:1;overflow-y:auto;padding:4px 10px 12px;scrollbar-width:thin}
+.lat-nav::-webkit-scrollbar{width:5px}
+.lat-nav::-webkit-scrollbar-thumb{background:var(--l-2);border-radius:3px}
+.lat-g{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t-3);
+  padding:16px 8px 6px}
+.lat-i{display:flex;align-items:center;gap:10px;width:100%;padding:7px 8px;border-radius:var(--r-p);
+  color:var(--t-2);font-size:13px;font-weight:500;text-align:left;transition:background var(--tr),color var(--tr)}
+.lat-i:hover{background:var(--sup-2);color:var(--t-1)}
+.lat-i.on{background:var(--az-bg);color:var(--az-f);font-weight:600}
+.lat-i .q{margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:99px;
+  background:var(--vm-bg);color:var(--vm)}
+.lat-i .q.calmo{background:var(--sup-2);color:var(--t-3)}
+.lat-pe{border-top:1px solid var(--l-1);padding:10px}
+.perfil{display:flex;align-items:center;gap:9px;width:100%;padding:7px 8px;border-radius:var(--r-p);text-align:left}
+.perfil:hover{background:var(--sup-2)}
+.av{width:28px;height:28px;flex:none;border-radius:50%;background:var(--az-bg);color:var(--az-f);
+  display:grid;place-items:center;font-size:11px;font-weight:700}
+.perfil b{display:block;font-size:12.5px;font-weight:600;line-height:1.3}
+.perfil s{display:block;font-size:10.5px;color:var(--t-3);text-decoration:none}
+
+.corpo{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ─────────── BARRA SUPERIOR ─────────── */
+.topo{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--sup-0) 86%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--l-1)}
+.topo-in{max-width:1120px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;gap:12px}
+.bt-i{width:34px;height:34px;flex:none;border-radius:var(--r-p);display:grid;place-items:center;
+  color:var(--t-2);transition:background var(--tr),color var(--tr)}
+.bt-i:hover{background:var(--sup-2);color:var(--t-1)}
+.menu-m{display:none}
+.busca{flex:1;max-width:420px;display:flex;align-items:center;gap:9px;height:38px;padding:0 12px;
+  flex-shrink:1;min-width:0;
+  background:var(--sup-1);border:1px solid var(--l-1);border-radius:var(--r-m);
+  color:var(--t-3);font-size:13px;text-align:left;transition:border-color var(--tr)}
+.busca:hover{border-color:var(--l-2)}
+.busca span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tecla{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 6px;border-radius:5px;
+  border:1px solid var(--l-1);background:var(--sup-2);color:var(--t-3)}
+.topo-d{margin-left:auto;display:flex;align-items:center;gap:4px}
+
+/* ─────────── FAIXA DE RISCO ─────────── */
+.risco{border-bottom:1px solid var(--l-1);background:var(--sup-1)}
+.risco-in{max-width:1120px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:11px}
+.farol{width:9px;height:9px;flex:none;border-radius:50%;position:relative}
+.farol::after{content:'';position:absolute;inset:-4px;border-radius:50%;
+  animation:pf 2.8s cubic-bezier(.2,0,0,1) infinite}
+.r-vm .farol{background:var(--vm)} .r-vm .farol::after{box-shadow:0 0 0 0 var(--vm)}
+.r-am .farol{background:var(--am)} .r-am .farol::after{box-shadow:0 0 0 0 var(--am)}
+.r-vd .farol{background:var(--vd)} .r-vd .farol::after{box-shadow:0 0 0 0 var(--vd)}
+@keyframes pf{0%{opacity:.45}70%{box-shadow:0 0 0 9px transparent;opacity:0}100%{opacity:0}}
+.risco-t{font-size:12.5px;font-weight:600;letter-spacing:.01em}
+.r-vm .risco-t{color:var(--vm)} .r-am .risco-t{color:var(--am)} .r-vd .risco-t{color:var(--vd)}
+.risco-d{font-size:12.5px;color:var(--t-2)}
+.risco-a{margin-left:auto;font-size:12px;font-weight:600;color:var(--az-f);display:flex;align-items:center;gap:4px;flex:none}
+
+/* ─────────── CONTEÚDO ─────────── */
+.pag{flex:1;max-width:1120px;width:100%;margin:0 auto;padding:28px 24px 96px}
+
+.cab{margin-bottom:22px}
+.cab h1{font-size:24px;font-weight:600;letter-spacing:-.025em;line-height:1.22}
+.cab p{margin-top:5px;font-size:14px;color:var(--t-2)}
+
+/* atalhos — "ir direto ao que busca" */
+.atalhos{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+.at{display:flex;align-items:center;gap:8px;padding:8px 13px;border-radius:99px;
+  background:var(--sup-1);border:1px solid var(--l-1);font-size:13px;font-weight:500;color:var(--t-2);
+  transition:border-color var(--tr),color var(--tr),background var(--tr)}
+.at:hover{border-color:var(--l-2);color:var(--t-1)}
+.at.on{background:var(--az-bg);border-color:var(--az);color:var(--az-f);font-weight:600}
+.at b{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:0 5px;border-radius:5px;
+  background:var(--sup-2);color:var(--t-2)}
+.at.on b{background:var(--sup-1);color:var(--az-f)}
+.at .pt{width:6px;height:6px;border-radius:50%;flex:none}
+.at .pt.vm{background:var(--vm)} .at .pt.am{background:var(--am)} .at .pt.vd{background:var(--vd)}
+
+/* seção */
+.sec{margin-bottom:30px}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;
+  padding-bottom:9px;border-bottom:1px solid var(--l-1)}
+.sec-h h2{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t-2)}
+.sec-h .c{font-size:11.5px;color:var(--t-3);font-family:'IBM Plex Mono',monospace}
+.sec-h .l{margin-left:auto;font-size:12.5px;font-weight:500;color:var(--az-f);
+  display:flex;align-items:center;gap:4px}
+
+/* ═══ CARTÃO: uma anatomia para todo o sistema ═══
+   meta → título → resumo → rodapé                        */
+.ct{display:block;width:100%;text-align:left;background:var(--sup-1);border:1px solid var(--l-1);
+  border-radius:var(--r-g);padding:0;margin-bottom:9px;box-shadow:var(--sombra);
+  transition:border-color var(--tr),box-shadow var(--tr),transform var(--tr)}
+button.ct:hover{border-color:var(--l-2);box-shadow:var(--sombra-m);transform:translateY(-1px)}
+button.ct:active{transform:none}
+.ct-in{padding:15px 17px}
+.ct-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:10px;
+  font-size:11.5px;color:var(--t-3);line-height:1.4;min-height:20px}
+.ct-meta .sep{width:2.5px;height:2.5px;border-radius:50%;background:var(--l-2)}
+.ct h3{font-size:15px;font-weight:600;letter-spacing:-.015em;line-height:1.4;margin-bottom:6px}
+.ct .rz{font-size:13.5px;color:var(--t-2);line-height:1.58}
+.ct-pe{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;
+  padding:11px 17px;border-top:1px solid var(--l-1);background:var(--sup-2);
+  border-radius:0 0 var(--r-g) var(--r-g);min-height:44px}
+.ct-pe .ac{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--az-f);
+  display:flex;align-items:center;gap:5px;flex:none}
+
+/* etiquetas */
+.et{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  letter-spacing:.015em;padding:2px 8px;border-radius:99px;border:1px solid transparent}
+.et .pt{width:5px;height:5px;border-radius:50%;background:currentColor;flex:none}
+.et.vm{background:var(--vm-bg);color:var(--vm)}
+.et.am{background:var(--am-bg);color:var(--am)}
+.et.vd{background:var(--vd-bg);color:var(--vd)}
+.et.nt{background:var(--sup-2);color:var(--t-2);border-color:var(--l-1)}
+.et.va{background:transparent;border-color:var(--l-1);color:var(--t-3);font-weight:500}
+.area{font-size:10.5px;font-weight:600;letter-spacing:.03em;padding:2px 7px;border-radius:5px;
+  background:var(--az-bg);color:var(--az-f)}
+.areas{display:flex;gap:4px;flex-wrap:wrap}
+
+/* prazo */
+.pz{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;color:var(--t-2)}
+.pz.urg{color:var(--vm);font-weight:600}
+
+/* ═══ PAINEL DE NÚMEROS ═══ */
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:26px}
+.nm{background:var(--sup-1);border:1px solid var(--l-1);border-radius:var(--r-g);padding:14px 15px;
+  text-align:left;transition:border-color var(--tr)}
+button.nm:hover{border-color:var(--l-2)}
+.nm .v{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1;font-family:'IBM Plex Mono',monospace}
+.nm .r{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:11.5px;color:var(--t-2);font-weight:500}
+.nm .r .pt{width:6px;height:6px;border-radius:50%;flex:none}
+.nm.vm .v{color:var(--vm)} .nm.vm .pt{background:var(--vm)}
+.nm.am .v{color:var(--am)} .nm.am .pt{background:var(--am)}
+.nm.vd .v{color:var(--vd)} .nm.vd .pt{background:var(--vd)}
+.nm.nt .pt{background:var(--t-3)}
+
+/* ═══ TEXTO OFICIAL — a assinatura ═══ */
+.lei{background:var(--sup-lei);border-left:2.5px solid var(--m-700);
+  border-radius:0 var(--r-m) var(--r-m) 0;padding:14px 16px;margin:12px 0}
+html[data-tema="escuro"] .lei{border-left-color:var(--az)}
+.lei p{font-family:'Source Serif 4',Georgia,serif;font-size:14.5px;line-height:1.66;color:var(--t-1)}
+.lei .fn{display:flex;align-items:center;gap:6px;margin-top:9px;font-size:11px;color:var(--t-3);
+  font-family:'Inter',sans-serif}
+
+/* ═══ DETALHE / PASSOS ═══ */
+.voltar{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;
+  color:var(--t-2);margin-bottom:16px;padding:5px 0}
+.voltar:hover{color:var(--t-1)}
+.bl{background:var(--sup-1);border:1px solid var(--l-1);border-radius:var(--r-g);
+  padding:18px;margin-bottom:10px;box-shadow:var(--sombra)}
+.bl-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.bl-n{width:24px;height:24px;flex:none;border-radius:7px;background:var(--az-bg);color:var(--az-f);
+  display:grid;place-items:center;font-size:11.5px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.bl-h strong{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.bl p{font-size:14px;line-height:1.68;color:var(--t-1)}
+.bl p+p{margin-top:10px}
+
+.av-risco{display:flex;gap:12px;padding:14px 15px;border-radius:var(--r-m);border:1px solid}
+.av-risco.vm{background:var(--vm-bg);border-color:color-mix(in srgb,var(--vm) 22%,transparent)}
+.av-risco.am{background:var(--am-bg);border-color:color-mix(in srgb,var(--am) 22%,transparent)}
+.av-risco .i{flex:none;margin-top:1px}
+.av-risco.vm .i{color:var(--vm)} .av-risco.am .i{color:var(--am)}
+.av-risco b{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
+.av-risco.vm b{color:var(--vm)} .av-risco.am b{color:var(--am)}
+.av-risco p{font-size:13.2px;line-height:1.6;color:var(--t-2)}
+
+.lin{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-bottom:1px solid var(--l-1)}
+.lin:last-child{border-bottom:none;padding-bottom:0}
+.lin:first-child{padding-top:0}
+.lin .mk{flex:none;margin-top:1px}
+.lin.sim .mk{color:var(--vd)} .lin.nao .mk{color:var(--t-3)}
+.lin b{font-size:13.5px;font-weight:600;flex:none;width:104px}
+.lin span{font-size:13px;color:var(--t-2);line-height:1.55;flex:1}
+.lin.nao b,.lin.nao span{color:var(--t-3)}
+
+.tarefa{display:flex;align-items:flex-start;gap:11px;padding:12px 0;border-bottom:1px solid var(--l-1)}
+.tarefa:last-child{border-bottom:none}
+.cx{width:20px;height:20px;flex:none;border:1.7px solid var(--l-2);border-radius:6px;margin-top:1px;
+  display:grid;place-items:center;color:transparent;transition:all var(--tr)}
+.cx:hover{border-color:var(--az)}
+.cx.ok{background:var(--vd);border-color:var(--vd);color:#fff}
+.tf{flex:1;min-width:0}
+.tf p{font-size:13.8px;line-height:1.5}
+.tf.ok p{color:var(--t-3);text-decoration:line-through}
+.tf s{display:block;font-size:11.5px;color:var(--t-3);text-decoration:none;margin-top:3px}
+
+/* como impacta a empresa */
+.impacto-emp{background:var(--az-bg);border:1px solid color-mix(in srgb,var(--az) 26%,transparent);
+  border-radius:var(--r-g);padding:18px;margin-bottom:10px}
+.impacto-emp .h{display:flex;align-items:center;gap:9px;margin-bottom:11px;color:var(--az-f)}
+.impacto-emp .h strong{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.impacto-emp p{font-size:14px;line-height:1.68}
+
+/* clientes */
+.cli{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--l-1)}
+.cli:last-child{border-bottom:none}
+.cli-a{width:34px;height:34px;flex:none;border-radius:9px;background:var(--sup-2);color:var(--t-2);
+  display:grid;place-items:center;font-size:11.5px;font-weight:700}
+.cli-t{flex:1;min-width:0}
+.cli-t b{display:block;font-size:13.5px;font-weight:600}
+.cli-t s{display:block;font-size:11.5px;color:var(--t-3);text-decoration:none;margin-top:1px}
+.cli-b{flex:none;font-size:11.5px;font-weight:600;color:var(--az-f);padding:6px 10px;
+  border-radius:var(--r-p);background:var(--az-bg)}
+.motivo{padding:12px 14px;margin-bottom:4px;background:var(--sup-2);border-radius:var(--r-m);
+  font-size:12.8px;line-height:1.6;color:var(--t-2)}
+.motivo b{color:var(--t-1);font-weight:600}
+.cadeia{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:9px}
+.elo{font-size:11px;padding:2.5px 8px;border-radius:99px;background:var(--sup-1);
+  border:1px solid var(--l-1);color:var(--t-2)}
+
+/* tabela / lista */
+.lista{background:var(--sup-1);border:1px solid var(--l-1);border-radius:var(--r-g);overflow:hidden}
+.li{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 16px;
+  border-bottom:1px solid var(--l-1);transition:background var(--tr)}
+.li:first-child{border-radius:var(--r-g) var(--r-g) 0 0}
+.li:last-child{border-radius:0 0 var(--r-g) var(--r-g)}
+.li:last-child{border-bottom:none}
+.li:hover{background:var(--sup-2)}
+.li-t{flex:1;min-width:0}
+.li-t b{display:block;font-size:13.5px;font-weight:500;line-height:1.4}
+.li-t s{display:block;font-size:11.5px;color:var(--t-3);text-decoration:none;margin-top:2px}
+.li .ch{flex:none;color:var(--t-3)}
+
+.vazio{padding:40px 20px;text-align:center}
+.vazio .i{color:var(--t-3);margin-bottom:10px}
+.vazio b{display:block;font-size:14.5px;font-weight:600;margin-bottom:4px}
+.vazio p{font-size:13px;color:var(--t-2)}
+
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:2.5px 9px;border-radius:99px;
+  background:var(--sup-2);color:var(--t-2);border:1px solid var(--l-1)}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+
+.bt{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 17px;
+  border-radius:var(--r-m);font-size:13.5px;font-weight:600;transition:background var(--tr)}
+.bt.pr{background:var(--m-900);color:#fff}
+.bt.pr:hover{background:var(--m-700)}
+html[data-tema="escuro"] .bt.pr{background:var(--az);color:#0A0E15}
+.bt.sc{background:var(--sup-1);border:1px solid var(--l-1);color:var(--t-2)}
+.bt.sc:hover{border-color:var(--l-2);color:var(--t-1)}
+.bts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+
+/* ═══════════════════════════════════════════════
+   IA AO CANTO
+   ═══════════════════════════════════════════════ */
+.ia-doca{position:fixed;right:22px;bottom:22px;z-index:60;display:flex;flex-direction:column;
+  align-items:flex-end;gap:10px;pointer-events:none}
+.ia-doca>*{pointer-events:auto}
+
+.ia-fala{max-width:290px;background:var(--sup-1);border:1px solid var(--l-1);
+  border-radius:var(--r-g) var(--r-g) 4px var(--r-g);padding:13px 15px;box-shadow:var(--sombra-g);
+  opacity:0;transform:translateY(6px) scale(.97);transition:all 260ms cubic-bezier(.2,0,0,1);
+  pointer-events:none}
+.ia-fala.on{opacity:1;transform:none;pointer-events:auto}
+.ia-fala p{font-size:13.2px;line-height:1.55;color:var(--t-1)}
+.ia-fala .aq{display:flex;gap:8px;margin-top:11px}
+.ia-fala .aq button{font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:var(--r-p)}
+.ia-fala .aq .s{background:var(--az-bg);color:var(--az-f)}
+.ia-fala .aq .n{color:var(--t-3)}
+.ia-fala .aq .n:hover{color:var(--t-2)}
+
+.ia-bt{width:52px;height:52px;border-radius:50%;background:var(--m-900);color:#fff;
+  display:grid;place-items:center;box-shadow:var(--sombra-g);position:relative;
+  transition:transform var(--tr),background var(--tr)}
+.ia-bt:hover{transform:scale(1.05)}
+.ia-bt:active{transform:scale(.97)}
+html[data-tema="escuro"] .ia-bt{background:var(--az);color:#0A0E15}
+.ia-bt .pn{position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;
+  background:var(--vm);border:2.5px solid var(--sup-0)}
+
+/* painel da IA */
+.ia-pn{position:fixed;right:22px;bottom:22px;z-index:70;width:min(400px,calc(100vw - 44px));
+  height:min(620px,calc(100vh - 44px));background:var(--sup-1);border:1px solid var(--l-1);
+  border-radius:16px;box-shadow:var(--sombra-g);display:flex;flex-direction:column;overflow:hidden;
+  opacity:0;transform:translateY(12px) scale(.98);pointer-events:none;
+  transition:all 240ms cubic-bezier(.2,0,0,1)}
+.ia-pn.on{opacity:1;transform:none;pointer-events:auto}
+.ia-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--l-1)}
+.ia-av{width:30px;height:30px;flex:none;border-radius:8px;background:var(--m-900);color:#fff;
+  display:grid;place-items:center}
+html[data-tema="escuro"] .ia-av{background:var(--az);color:#0A0E15}
+.ia-h b{display:block;font-size:13px;font-weight:600;line-height:1.3}
+.ia-h s{display:block;font-size:10.5px;color:var(--t-3);text-decoration:none}
+.ia-corpo{flex:1;overflow-y:auto;padding:16px;scrollbar-width:thin}
+.ia-corpo::-webkit-scrollbar{width:5px}
+.ia-corpo::-webkit-scrollbar-thumb{background:var(--l-2);border-radius:3px}
+.ia-pe{padding:12px 14px;border-top:1px solid var(--l-1);background:var(--sup-2)}
+.ia-campo{display:flex;align-items:center;gap:9px;padding:8px 12px;background:var(--sup-1);
+  border:1px solid var(--l-1);border-radius:var(--r-m)}
+.ia-campo input{flex:1;border:none;background:none;outline:none;font:inherit;font-size:13.5px;color:var(--t-1)}
+.ia-campo input::placeholder{color:var(--t-3)}
+.ia-env{width:28px;height:28px;flex:none;border-radius:7px;background:var(--m-900);color:#fff;display:grid;place-items:center}
+html[data-tema="escuro"] .ia-env{background:var(--az);color:#0A0E15}
+
+.msg-u{max-width:85%;margin-left:auto;background:var(--az-bg);padding:10px 13px;
+  border-radius:12px 12px 3px 12px;font-size:13.5px;line-height:1.5;margin-bottom:16px}
+.msg-a{margin-bottom:20px}
+.msg-a .qm{display:flex;align-items:center;gap:7px;margin-bottom:9px;font-size:11px;
+  font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--t-3)}
+.msg-a .tx{font-size:13.5px;line-height:1.62}
+.msg-a .tx+.tx{margin-top:9px}
+.mini{background:var(--sup-2);border-radius:var(--r-m);padding:12px 14px;margin-top:11px}
+.mini b{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--t-3);margin-bottom:6px}
+.mini p{font-size:13px;line-height:1.58;color:var(--t-2)}
+.pensa{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-3)}
+.pensa i{width:4.5px;height:4.5px;border-radius:50%;background:var(--t-3);display:inline-block;
+  animation:pisca 1.3s ease-in-out infinite}
+.pensa i:nth-child(2){animation-delay:.18s} .pensa i:nth-child(3){animation-delay:.36s}
+@keyframes pisca{0%,60%,100%{opacity:.28}30%{opacity:1}}
+.atalho-ia{display:block;width:100%;text-align:left;padding:10px 13px;margin-bottom:7px;
+  border:1px solid var(--l-1);border-radius:var(--r-m);font-size:13px;color:var(--t-2);
+  transition:border-color var(--tr),background var(--tr),color var(--tr)}
+.atalho-ia:hover{border-color:var(--az);background:var(--az-bg);color:var(--az-f)}
+.conf-x{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border-radius:var(--r-m);
+  border:1px solid var(--l-1);margin-top:12px}
+.conf-x .fx{flex:none;text-align:center;padding-right:11px;border-right:1px solid var(--l-1)}
+.conf-x .fx b{display:block;font-size:12px;font-weight:700}
+.conf-x .fx s{display:block;font-size:10px;color:var(--t-3);text-decoration:none;margin-top:2px;
+  font-family:'IBM Plex Mono',monospace}
+.conf-x p{font-size:12px;line-height:1.55;color:var(--t-2)}
+.f-muito_alto{color:var(--vd)}.f-alto{color:var(--az-f)}.f-moderado{color:var(--am)}.f-baixo{color:var(--vm)}
+.dvg{border:1px solid color-mix(in srgb,var(--am) 26%,transparent);background:var(--am-bg);
+  border-radius:var(--r-m);padding:13px 15px;margin-top:12px}
+.dvg .h{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--am)}
+.dvg .h b{font-size:12.5px;font-weight:700}
+.dvg .p{padding:9px 0;border-top:1px solid color-mix(in srgb,var(--am) 20%,transparent)}
+.dvg .p:first-of-type{border-top:none;padding-top:0}
+.dvg .p b{display:block;font-size:12px;font-weight:700;margin-bottom:4px}
+.dvg .p p{font-size:12.8px;line-height:1.55}
+.dvg .o{margin-top:10px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--am) 20%,transparent);
+  font-size:12.5px;line-height:1.55;color:var(--am);font-weight:500}
+.veu{position:fixed;inset:0;z-index:65;background:rgba(8,32,58,.2);opacity:0;pointer-events:none;
+  transition:opacity 240ms ease}
+.veu.on{opacity:1;pointer-events:auto}
+
+/* ═══ PALETA ⌘K ═══ */
+.pl-veu{position:fixed;inset:0;z-index:80;background:rgba(8,32,58,.32);backdrop-filter:blur(3px);
+  display:none;align-items:flex-start;justify-content:center;padding:12vh 20px 20px}
+.pl-veu.on{display:flex;animation:fade 120ms ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.pl{width:100%;max-width:580px;background:var(--sup-1);border:1px solid var(--l-1);border-radius:14px;
+  box-shadow:var(--sombra-g);overflow:hidden;animation:sobe 180ms cubic-bezier(.2,0,0,1)}
+@keyframes sobe{from{opacity:0;transform:translateY(-8px) scale(.985)}to{opacity:1;transform:none}}
+.pl-h{display:flex;align-items:center;gap:11px;padding:14px 17px;border-bottom:1px solid var(--l-1)}
+.pl-h input{flex:1;border:none;background:none;outline:none;font-size:15px;color:var(--t-1);font-family:inherit}
+.pl-h input::placeholder{color:var(--t-3)}
+.pl-b{max-height:min(50vh,400px);overflow-y:auto;padding:7px}
+.pl-g{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t-3);padding:10px 10px 4px}
+.pl-i{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 10px;border-radius:var(--r-p)}
+.pl-i.mk{background:var(--az-bg)}
+.pl-ic{width:28px;height:28px;flex:none;border-radius:7px;background:var(--sup-2);color:var(--t-2);display:grid;place-items:center}
+.pl-i.mk .pl-ic{background:var(--sup-1);color:var(--az-f)}
+.pl-t{flex:1;min-width:0}
+.pl-t b{display:block;font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-t s{display:block;font-size:11.5px;color:var(--t-3);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-f{display:flex;gap:15px;padding:9px 16px;border-top:1px solid var(--l-1);background:var(--sup-2);
+  font-size:11px;color:var(--t-3)}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADAPTAÇÃO — UM SISTEMA, QUATRO LARGURAS
+   Mesmo HTML, mesmo JavaScript, mesmas funções. Só o arranjo muda.
+
+     CELULAR    < 768px   navegação inferior · coluna única
+     TABLET     768–1023  navegação inferior · grade de 4
+     NOTEBOOK   1024–1439 lateral fixa · conteúdo 1120px
+     MONITOR    ≥ 1440    lateral fixa · conteúdo 1280px
+   ═══════════════════════════════════════════════════════════════ */
+.nav-m{display:none}
+
+/* ─────── CELULAR E TABLET (< 1024) ─────── */
+@media (max-width:1023px){
+  .lat{position:fixed;left:0;top:0;z-index:90;transform:translateX(-100%);
+    transition:transform 240ms cubic-bezier(.2,0,0,1);box-shadow:var(--sombra-g)}
+  .lat.on{transform:none}
+  .menu-m{display:grid}
+  .topo-in{padding:0 16px;gap:9px}
+  .risco-in{padding:10px 16px;gap:9px}
+  .pag{padding:20px 16px calc(76px + var(--sb))}
+  .cab h1{font-size:21px}
+  .busca span{display:none}
+  .busca{max-width:none;flex:none;width:36px;padding:0;justify-content:center}
+  .busca .tecla{display:none}
+
+  .nav-m{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--sup-1);
+    border-top:1px solid var(--l-1);padding-bottom:var(--sb);box-shadow:0 -2px 16px rgba(13,24,38,.06)}
+  .nav-m button{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;color:var(--t-3);font-size:10px;font-weight:500;position:relative}
+  .nav-m button.on{color:var(--az-f);font-weight:600}
+  .nav-m button.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:24px;height:2.5px;border-radius:0 0 3px 3px;background:var(--az)}
+  .nav-m .q{position:absolute;top:7px;right:calc(50% - 18px);min-width:15px;height:15px;padding:0 4px;
+    border-radius:99px;background:var(--vm);color:#fff;font-size:9px;font-weight:700;
+    display:grid;place-items:center;line-height:1}
+
+  .ia-doca{right:16px;bottom:calc(70px + var(--sb))}
+  .ia-pn{right:0;left:0;bottom:0;width:100%;height:86vh;border-radius:16px 16px 0 0;transform:translateY(24px)}
+}
+
+/* ─────── CELULAR (< 768) ─────── */
+@media (max-width:767px){
+  .risco-d{display:none}
+  .nums{grid-template-columns:1fr 1fr;gap:8px}
+  .ct-in{padding:14px 15px}
+  .ct-pe{padding:10px 15px}
+  .lin{flex-wrap:wrap;gap:8px}
+  .lin b{width:auto}
+  .lin span{width:100%;padding-left:26px}
+  .cab h1{font-size:20px}
+  .atalhos{gap:6px}
+  .at{padding:7px 11px;font-size:12.5px}
+  /* alvos de toque nunca abaixo de 44px */
+  .cx{width:24px;height:24px}
+  .cli-b{padding:9px 12px}
+  .bt{height:44px}
+}
+
+/* ─────── TABLET (768–1023) ─────── */
+@media (min-width:768px) and (max-width:1023px){
+  .pag{padding:24px 28px calc(78px + var(--sb));max-width:820px}
+  .nums{grid-template-columns:repeat(4,1fr)}
+  .risco-in{padding:11px 28px}
+  .topo-in{padding:0 28px}
+  .busca{width:auto;flex:1;max-width:340px;padding:0 12px;justify-content:flex-start}
+  .busca span{display:block}
+  .cab h1{font-size:23px}
+}
+
+/* ─────── NOTEBOOK (≥ 1024) ─────── */
+@media (min-width:1024px){
+  .lat{display:flex}
+  .ia-doca{right:22px;bottom:22px}
+}
+
+/* ─────── MONITOR GRANDE (≥ 1440) ─────── */
+@media (min-width:1440px){
+  :root{--lat:256px}
+  .topo-in,.risco-in,.pag{max-width:1340px}
+  .nums{gap:12px}
+  .pag{padding:32px 32px 96px}
+}
+
+/* ─────── NOTEBOOK DE TELA BAIXA (1366×768 e afins) ─────── */
+@media (min-width:1024px) and (max-height:800px){
+  .topo-in{height:50px}
+  .risco-in{padding:8px 24px}
+  .pag{padding-top:22px}
+  .cab{margin-bottom:18px}
+  .nums{margin-bottom:20px}
+  .sec{margin-bottom:24px}
+  .ia-pn{height:min(560px,calc(100vh - 36px))}
+}
+
+/* ─────── CELULAR DEITADO ─────── */
+@media (max-height:520px) and (orientation:landscape){
+  .risco{display:none}
+  .ia-pn{height:96vh}
+  .nav-m button{min-height:48px;font-size:9.5px}
+}
+
+/* ─────── TELAS SENSÍVEIS AO TOQUE ─────── */
+@media (hover:none){
+  button.ct:hover{transform:none;box-shadow:var(--sombra);border-color:var(--l-1)}
+  .ia-bt:hover{transform:none}
+  button.ct:active{background:var(--sup-2)}
+  .li:active{background:var(--sup-2)}
+}
+
+/* ─────── IMPRESSÃO (anexar análise a processo) ─────── */
+@media print{
+  .lat,.nav-m,.topo,.risco,.ia-doca,.ia-pn,.veu,.bts,.voltar{display:none!important}
+  body{background:#fff}
+  .pag{max-width:none;padding:0}
+  .ct,.bl{break-inside:avoid;box-shadow:none;border-color:#ccc}
+  .lei{background:#fafafa}
+}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true">
+<symbol id="k-casa" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19Z"/><path d="M9.5 20.5v-6h5v6"/></symbol>
+<symbol id="k-sino" viewBox="0 0 24 24"><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></symbol>
+<symbol id="k-lupa" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></symbol>
+<symbol id="k-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+<symbol id="k-eng" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></symbol>
+<symbol id="k-ia" viewBox="0 0 24 24"><path d="M12 3.5 13.7 8.3 18.5 10 13.7 11.7 12 16.5 10.3 11.7 5.5 10 10.3 8.3Z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/></symbol>
+<symbol id="k-escudo" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.9 7 9 4-1.1 7-4.5 7-9V6Z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="k-alerta" viewBox="0 0 24 24"><path d="M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4M12 17h.01"/></symbol>
+<symbol id="k-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.3 12.2 2.6 2.6 4.8-5.2"/></symbol>
+<symbol id="k-tick" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+<symbol id="k-menos" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h7"/></symbol>
+<symbol id="k-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></symbol>
+<symbol id="k-dir" viewBox="0 0 24 24"><path d="M4.5 12h15"/><path d="m13.5 6 6 6-6 6"/></symbol>
+<symbol id="k-esq" viewBox="0 0 24 24"><path d="M19.5 12h-15"/><path d="m10.5 6-6 6 6 6"/></symbol>
+<symbol id="k-cheq" viewBox="0 0 24 24"><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
+<symbol id="k-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></symbol>
+<symbol id="k-lua" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></symbol>
+<symbol id="k-menu" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h16M4 17.5h11"/></symbol>
+<symbol id="k-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+<symbol id="k-link" viewBox="0 0 24 24"><path d="M10 13.5a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 1 0-5.7-5.7l-1.3 1.3"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-2.6 2.6a4 4 0 1 0 5.7 5.7l1.3-1.3"/></symbol>
+<symbol id="k-empresa" viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="14" rx="2"/><path d="M8.5 7V4.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1V7"/><path d="M3.5 12h17"/></symbol>
+<symbol id="k-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.2a3.5 3.5 0 0 1 0 5.6M17.5 14.4a6.5 6.5 0 0 1 4 5.6"/></symbol>
+<symbol id="k-caixa" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4.5" rx="1.5"/><path d="M5 8.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19V8.5"/><path d="M10 12.5h4"/></symbol>
+<symbol id="k-lista" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="m8 12.2 2.7 2.7L16.5 9"/></symbol>
+<symbol id="k-tempo" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4.5V9h4.5"/><path d="M12 8v4.3l3 1.7"/></symbol>
+<symbol id="k-diff" viewBox="0 0 24 24"><path d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9"/><path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H15"/><path d="M12 3v18"/></symbol>
+<symbol id="k-log" viewBox="0 0 24 24"><path d="M6.5 3h11A1.5 1.5 0 0 1 19 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3Z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></symbol>
+<symbol id="k-balanca" viewBox="0 0 24 24"><path d="M12 3v18M6 21h12M4 8h16"/><path d="m4 8-1.5 5a3.2 3.2 0 0 0 6 0Z"/><path d="m20 8 1.5 5a3.2 3.2 0 0 1-6 0Z"/></symbol>
+<symbol id="k-livro" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21Z"/></symbol>
+<symbol id="k-cafe" viewBox="0 0 24 24"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5Z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7.5 3v2M11 3v2M14.5 3v2"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- LATERAL -->
+  <aside class="lat" id="lat">
+    <div class="lat-topo">
+      <div class="logo">RE</div>
+      <div style="min-width:0"><b>Inteligência Operacional</b><s>Realtec Engenharia</s></div>
+    </div>
+    <nav class="lat-nav" id="latNav"></nav>
+    <div class="lat-pe">
+      <button class="perfil" onclick="USUARIO.autenticado?ir('config'):abrirEntrar()">
+        <span class="av" id="avIni"><svg class="ic ic-p"><use href="#k-empresa"/></svg></span>
+        <span style="min-width:0;flex:1"><b id="avNome">Realtec Engenharia</b><s id="avCargo">Entrar para personalizar</s></span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="corpo">
+    <!-- TOPO -->
+    <header class="topo">
+      <div class="topo-in">
+        <button class="bt-i menu-m" onclick="menu()" aria-label="Menu"><svg class="ic"><use href="#k-menu"/></svg></button>
+        <button class="busca" onclick="abrirPl()">
+          <svg class="ic ic-p"><use href="#k-lupa"/></svg>
+          <span>Buscar norma, cliente, documento…</span>
+          <span class="tecla">⌘K</span>
+        </button>
+        <div class="topo-d">
+          <button class="bt-i" onclick="tema()" aria-label="Tema"><svg class="ic"><use href="#k-lua" id="icT"/></svg></button>
+        </div>
+      </div>
+    </header>
+
+    <!-- FAIXA DE RISCO -->
+    <div class="risco" id="faixaRisco"></div>
+
+    <!-- CONTEÚDO -->
+    <main class="pag" id="pag"></main>
+  </div>
+</div>
+
+<!-- NAV MOBILE -->
+<nav class="nav-m" id="navM"></nav>
+
+<!-- IA AO CANTO -->
+<div class="veu" id="veuIa" onclick="fecharIa()"></div>
+<div class="ia-doca">
+  <div class="ia-fala" id="iaFala"></div>
+  <button class="ia-bt" id="iaBt" onclick="abrirIa()" aria-label="Realtec IA">
+    <svg class="ic ic-g"><use href="#k-ia"/></svg>
+    <span class="pn" id="iaPonto"></span>
+  </button>
+</div>
+
+<aside class="ia-pn" id="iaPn" aria-label="Realtec IA">
+  <div class="ia-h">
+    <span class="ia-av"><svg class="ic"><use href="#k-ia"/></svg></span>
+    <span style="flex:1;min-width:0"><b>Realtec IA</b><s id="iaStatus">Acervo sincronizado às 07:42</s></span>
+    <button class="bt-i" onclick="fecharIa()" aria-label="Fechar"><svg class="ic ic-p"><use href="#k-x"/></svg></button>
+  </div>
+  <div class="ia-corpo" id="iaCorpo"></div>
+  <div class="ia-pe">
+    <div class="ia-campo">
+      <input id="iaInput" placeholder="Pergunte alguma coisa…" onkeydown="if(event.key==='Enter')iaEnviar()">
+      <button class="ia-env" onclick="iaEnviar()" aria-label="Enviar"><svg class="ic ic-p"><use href="#k-dir"/></svg></button>
+    </div>
+  </div>
+</aside>
+
+<!-- PALETA -->
+<div class="pl-veu" id="plVeu" onclick="if(event.target===this)fecharPl()">
+  <div class="pl" role="dialog">
+    <div class="pl-h">
+      <svg class="ic" style="color:var(--t-3)"><use href="#k-lupa"/></svg>
+      <input id="plIn" placeholder="Buscar em todo o sistema…" autocomplete="off" spellcheck="false">
+      <span class="tecla">esc</span>
+    </div>
+    <div class="pl-b" id="plB"></div>
+    <div class="pl-f"><span>↑↓ navegar</span><span>↵ abrir</span>
+      <span style="margin-left:auto">texto · sinônimos · sentido</span></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════ DADOS ═══════════════ */
+/* Identidade vem da sessão. Sem login, o sistema é impessoal — é um portal
+   da empresa, não de uma pessoa. Com login, cada responsável vê o próprio
+   nome e o impacto da própria área em destaque.                         */
+const USUARIO = {nome:null, cargo:null, area:null, autenticado:false};
+
+function primeiroNome(){ return USUARIO.nome ? USUARIO.nome.trim().split(/\s+/)[0] : null; }
+function iniciais(){
+  if(!USUARIO.nome) return null;
+  const p=USUARIO.nome.trim().split(/\s+/);
+  return ((p[0]||'')[0] + (p.length>1 ? (p[p.length-1]||'')[0] : '')).toUpperCase();
+}
+function saudacaoHora(){
+  const h=new Date().getHours();
+  return h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+}
+
+const MUDANCAS = [
+ {id:'nr1', nivel:'crit', norma:'NR-1', doc:'Portaria MTE nº 1.419/2024', orgao:'MTE',
+  eixo:'SST',
+  titulo:'Riscos psicossociais passam a ser fiscalizados com autuação',
+  resumo:'Os fatores de risco psicossociais tornaram-se item obrigatório do PGR. O período educativo terminou e a Inspeção do Trabalho já pode autuar.',
+  areas:['SST','RH','Jurídico','Engenharia'], leitura:'3 min', analisado:true, temImpacto:true,
+  data:'26/05/2026', prazo:'Em vigor', prazoUrg:true,
+  oficial:'Os fatores de risco psicossociais relacionados ao trabalho devem ser identificados, avaliados e controlados no Programa de Gerenciamento de Riscos, integrando o Gerenciamento de Riscos Ocupacionais.',
+  ref:'Capítulo 1.5 da NR-1 · redação da Portaria MTE nº 1.419/2024',
+  seis:{
+   mudou:'O capítulo 1.5 da NR-1, que organiza o Gerenciamento de Riscos Ocupacionais, passou a exigir que os fatores de risco psicossociais — sobrecarga, metas excessivas, assédio, falta de apoio organizacional — sejam identificados, avaliados e controlados no PGR, junto aos riscos físicos, químicos, biológicos e ergonômicos. A Portaria MTE nº 765/2025 fixou 26 de maio de 2026 como início da exigibilidade punitiva.',
+   impacto:'O PGR deixa de ser documento de segurança física e passa a refletir também como a empresa organiza o trabalho. Programas de bem-estar e palestras não substituem a avaliação de risco: exige-se metodologia documentada, inventário e plano de ação com responsáveis e prazos.',
+   risco:{n:'vm', t:'Autuação e passivo trabalhista',
+    d:'Empresas sem PGR contemplando os riscos psicossociais estão sujeitas a autuação pela Inspeção do Trabalho desde 26/05/2026. A norma também estabelece o padrão de diligência pelo qual se afere a culpa do empregador em ações por adoecimento mental ocupacional.'},
+   afetados:[
+    {a:'RH', s:'Capacitação de lideranças, canais de escuta e revisão de metas passam a compor a conformidade.', sim:true},
+    {a:'Depto. Pessoal', s:'Acompanhar afastamentos por transtornos mentais e sua correlação com o inventário.', sim:true},
+    {a:'Engenharia', s:'PGR de cada frente de obra precisa ser revisado, não apenas o da sede.', sim:true},
+    {a:'Seg. Trabalho', s:'Responsável pelo inventário, metodologia e plano de ação.', sim:true},
+    {a:'Jurídico', s:'Novo vetor de responsabilização com reflexo direto no contencioso trabalhista.', sim:true},
+    {a:'Financeiro', s:'Exposição a autuação e a passivo por adoecimento ocupacional.', sim:true}],
+   fazer:[
+    {t:'Incluir os fatores psicossociais no inventário de riscos do PGR', r:'SESMT', p:'31/08'},
+    {t:'Documentar a metodologia de identificação e avaliação', r:'SESMT', p:'15/08'},
+    {t:'Elaborar plano de ação com medidas, responsáveis e prazos', r:'SESMT', p:'25/08'},
+    {t:'Capacitar lideranças sobre organização do trabalho e assédio', r:'RH', p:'30/09'},
+    {t:'Integrar a avaliação com a AEP prevista na NR-17', r:'SESMT', p:'30/09'},
+    {t:'Revisar o PGR de todas as frentes de obra', r:'Engenharia', p:'15/10'}],
+   empresa:'A Realtec opera com equipes próprias e terceirizadas em frentes de obra. Cada PGR vinculado a contrato precisa ser revisado — não basta atualizar o programa da sede. Uma adequação única de metodologia serve para toda a operação; o que muda por frente é o inventário.'}},
+
+ {id:'consignado', nivel:'crit', norma:'Crédito do Trabalhador', doc:'Diretrizes publicadas no DOU', orgao:'MTE',
+  eixo:'DP',
+  titulo:'Consignado CLT — novas regras de rescisão em vigor',
+  resumo:'Mudou o tratamento do empréstimo consignado quando há rescisão. Altera procedimento no eSocial e no FGTS Digital e cria obrigação nova para o empregador no desligamento.',
+  areas:['DP','RH','Financeiro','Jurídico'], leitura:'3 min', analisado:false, temImpacto:true,
+  data:'26/06/2026', prazo:'Em vigor', prazoUrg:true,
+  oficial:'O desconto das parcelas do empréstimo deve respeitar o limite de 35% da remuneração disponível do empregado.',
+  ref:'Art. 30 da Portaria MTE nº 435/2025',
+  seis:{
+   mudou:'As diretrizes do programa Crédito do Trabalhador foram reformuladas, alterando o tratamento dos empréstimos consignados na rescisão contratual. Passaram a valer critérios mais rigorosos para o uso de verbas rescisórias e de recursos do FGTS como garantia, e foram criadas obrigações operacionais para o empregador durante o desligamento. Segundo orientação do MTE de 1º de julho, no desligamento de trabalhador com contrato consignado ativo o empregador deve aplicar o desconto da parcela da competência, desde que haja remuneração disponível suficiente nas verbas rescisórias, observado o limite de 35%.',
+   impacto:'O processo de desligamento ganha uma etapa: antes de fechar a rescisão, é preciso verificar se existe consignado ativo, calcular a parcela dentro dos 35% da remuneração disponível e escriturar corretamente no eSocial. A margem é global — considera a soma de todos os contratos ativos do trabalhador, não cada um isoladamente.',
+   risco:{n:'vm', t:'Erro de rescisão com reflexo financeiro e trabalhista',
+    d:'Desconto a menor deixa o banco sem receber e pode gerar cobrança contra a empresa. Desconto a maior invade verba do trabalhador e vira reclamatória. Erro na escrituração afeta a conciliação com as instituições financeiras e a transmissão ao eSocial.'},
+   afetados:[
+    {a:'Depto. Pessoal', s:'Executa a verificação, o cálculo e a escrituração no eSocial e no FGTS Digital.', sim:true},
+    {a:'RH', s:'Ajusta o roteiro de desligamento para incluir a checagem de consignado ativo.', sim:true},
+    {a:'Financeiro', s:'Conciliação dos valores descontados com as instituições financeiras.', sim:true},
+    {a:'Jurídico', s:'Risco de reclamatória por desconto indevido em verba rescisória.', sim:true},
+    {a:'Seg. Trabalho', s:'Sem impacto identificado.', sim:false},
+    {a:'Engenharia', s:'Sem impacto identificado.', sim:false}],
+   fazer:[
+    {t:'Incluir verificação de consignado ativo no roteiro de desligamento', r:'DP', p:'10/08'},
+    {t:'Confirmar com o fornecedor da folha o tratamento da parcela na rescisão', r:'DP', p:'15/08'},
+    {t:'Revisar o controle mensal de margem consignável por colaborador', r:'DP', p:'20/08'},
+    {t:'Treinar a equipe de DP sobre a escrituração no eSocial', r:'RH', p:'30/08'},
+    {t:'Definir conciliação mensal com as instituições financeiras', r:'Financeiro', p:'30/08'}],
+   empresa:'A Realtec tem rotatividade em frentes de obra, o que multiplica desligamentos e, com eles, a exposição a este erro. A adequação é única e vale para toda a empresa: um passo a mais no roteiro de rescisão, com conferência de margem antes de fechar o TRCT.'}},
+
+ {id:'nr35', nivel:'alto', norma:'NR-35', doc:'Portaria · NR-35', orgao:'MTE', eixo:'SST',
+  titulo:'Trabalho em altura — revisão do capítulo de planejamento',
+  resumo:'Requisito documental adicional na análise de risco prévia a trabalhos eventuais em altura.',
+  areas:['SST','Engenharia'], leitura:'2 min', analisado:false, temImpacto:true,
+  data:'14/07/2026', prazo:'01/10/2026', prazoUrg:false,
+  seis:{
+   mudou:'O capítulo de planejamento da NR-35 passou por revisão, com requisito documental adicional na análise de risco que precede trabalhos eventuais em altura.',
+   impacto:'O modelo de análise de risco e o procedimento de liberação de trabalho precisam ser atualizados antes de 01/10/2026.',
+   risco:{n:'am', t:'Prazo em curso, sem autuação ainda',
+    d:'A vigência começa em 01/10/2026. Há tempo hábil, mas a Realtec executa trabalho em altura de forma recorrente, o que amplia a exposição caso o prazo passe sem revisão.'},
+   afetados:[
+    {a:'Seg. Trabalho', s:'Atualizar modelo de análise de risco e treinar a supervisão.', sim:true},
+    {a:'Engenharia', s:'Revisar o procedimento de liberação de trabalho em altura.', sim:true},
+    {a:'RH', s:'Reciclagem da equipe de supervisão.', sim:true},
+    {a:'Depto. Pessoal', s:'Sem impacto identificado.', sim:false},
+    {a:'Jurídico', s:'Sem impacto identificado neste momento.', sim:false},
+    {a:'Financeiro', s:'Custo de reciclagem de treinamento.', sim:true}],
+   fazer:[
+    {t:'Atualizar o modelo de análise de risco para trabalho eventual em altura', r:'SESMT', p:'15/09'},
+    {t:'Revisar o procedimento operacional de liberação de trabalho', r:'Engenharia', p:'20/09'},
+    {t:'Reciclar a equipe de supervisão sobre o novo fluxo', r:'RH', p:'30/09'}],
+   empresa:'Trabalho em altura é atividade recorrente na operação. A adequação alcança o procedimento interno e os treinamentos de NR-35 ministrados às equipes. Um modelo único de análise de risco atende toda a empresa.'}},
+
+ {id:'esocial', nivel:'alto', norma:'eSocial', doc:'Nota Técnica · eSocial', orgao:'Comitê Gestor', eixo:'DP',
+  titulo:'Nova versão de leiaute com campo obrigatório em evento de SST',
+  resumo:'Evento de monitoramento da saúde do trabalhador passa a exigir informação adicional no envio.',
+  areas:['DP','SST','RH'], leitura:'2 min', analisado:false, temImpacto:true,
+  data:'21/07/2026', prazo:'30/09/2026', prazoUrg:false,
+  seis:{
+   mudou:'A nova versão do leiaute inclui campo obrigatório no evento de monitoramento da saúde do trabalhador.',
+   impacto:'O envio passa a ser rejeitado se o campo não for preenchido, afetando a rotina do Departamento Pessoal e a integração com a gestão de SST.',
+   risco:{n:'am', t:'Rejeição de envio e inconsistência de dados',
+    d:'Sem adequação, os eventos passam a ser rejeitados a partir da competência de virada, gerando pendência acumulada e risco de inconsistência nos registros de saúde ocupacional.'},
+   afetados:[
+    {a:'Depto. Pessoal', s:'Responsável pelo envio e pelo tratamento de rejeições.', sim:true},
+    {a:'Seg. Trabalho', s:'Fornece a informação adicional exigida no evento.', sim:true},
+    {a:'RH', s:'Ajuste no fluxo de coleta junto ao exame ocupacional.', sim:true},
+    {a:'Engenharia', s:'Sem impacto identificado.', sim:false},
+    {a:'Jurídico', s:'Sem impacto identificado.', sim:false},
+    {a:'Financeiro', s:'Sem impacto identificado.', sim:false}],
+   fazer:[
+    {t:'Verificar com o fornecedor da folha a atualização do leiaute', r:'DP', p:'20/08'},
+    {t:'Ajustar o fluxo de coleta do dado junto ao exame ocupacional', r:'SESMT', p:'05/09'},
+    {t:'Testar o envio em ambiente de homologação', r:'DP', p:'20/09'}],
+   empresa:'Impacto operacional concentrado no Departamento Pessoal. A dependência é do fornecedor do sistema de folha — convém confirmar a data de disponibilização antes do prazo.'}},
+
+ {id:'irrf', nivel:'alto', norma:'IRRF', doc:'Legislação tributária', orgao:'Receita Federal', eixo:'DP',
+  titulo:'Isenção de imposto de renda até R$ 5.000 na folha',
+  resumo:'Mudança na tabela de retenção afeta o cálculo da folha e o informe de rendimentos.',
+  areas:['DP','Financeiro','RH'], leitura:'2 min', analisado:false, temImpacto:true,
+  data:'12/06/2026', prazo:'Em vigor', prazoUrg:false,
+  seis:{
+   mudou:'A faixa de isenção do imposto de renda retido na fonte foi ampliada, alterando a retenção mensal na folha de pagamento.',
+   impacto:'Recalcula a retenção de boa parte da folha e altera o valor líquido recebido. Reflete no informe de rendimentos, que segue obrigatório mesmo com o fim da DIRF.',
+   risco:{n:'am', t:'Retenção incorreta e informe divergente',
+    d:'Retenção a maior gera restituição e reclamação do colaborador; a menor gera passivo com a Receita. O informe de rendimentos precisa refletir os dados do eSocial, da EFD-Reinf e da DCTFWeb.'},
+   afetados:[
+    {a:'Depto. Pessoal', s:'Aplica a nova tabela e confere a retenção.', sim:true},
+    {a:'Financeiro', s:'Conciliação e recolhimento.', sim:true},
+    {a:'RH', s:'Comunicação da mudança no líquido aos colaboradores.', sim:true},
+    {a:'Jurídico', s:'Sem impacto identificado.', sim:false},
+    {a:'Seg. Trabalho', s:'Sem impacto identificado.', sim:false},
+    {a:'Engenharia', s:'Sem impacto identificado.', sim:false}],
+   fazer:[
+    {t:'Confirmar a atualização da tabela no sistema de folha', r:'DP', p:'10/08'},
+    {t:'Conferir a retenção de uma amostra da folha', r:'DP', p:'15/08'},
+    {t:'Comunicar aos colaboradores a mudança no líquido', r:'RH', p:'20/08'}],
+   empresa:'Mudança de folha, aplicável a todos os colaboradores de uma vez. A conferência por amostragem no primeiro fechamento evita corrigir centenas de holerites depois.'}},
+
+ {id:'cbs', nivel:'medio', norma:'CBS/IBS', doc:'Instrução Normativa · RFB', orgao:'Receita Federal', eixo:'TRIBUTARIO',
+  titulo:'Período de teste — obrigação acessória em nota de serviço',
+  resumo:'Ajuste no preenchimento durante a transição tributária. Sem recolhimento efetivo, com exigência de destaque.',
+  areas:['Financeiro','DP'], leitura:'2 min', analisado:false, temImpacto:true,
+  data:'18/07/2026', prazo:'Em vigor', prazoUrg:false,
+  seis:{
+   mudou:'Ajuste no preenchimento da nota fiscal de serviço durante a fase de transição, com exigência de destaque sem recolhimento efetivo.',
+   impacto:'Alteração no processo de emissão. Não há desembolso nesta etapa.',
+   risco:{n:'am', t:'Baixo agora, relevante no cronograma',
+    d:'A fase atual é de teste. O ponto de atenção é o cronograma de transição, que segue até 2033 com obrigações crescentes.'},
+   afetados:[
+    {a:'Financeiro', s:'Ajuste no processo de emissão e conferência.', sim:true},
+    {a:'Depto. Pessoal', s:'Sem impacto direto na folha.', sim:false},
+    {a:'RH', s:'Sem impacto identificado.', sim:false},
+    {a:'Engenharia', s:'Sem impacto identificado.', sim:false},
+    {a:'Seg. Trabalho', s:'Sem impacto identificado.', sim:false},
+    {a:'Jurídico', s:'Acompanhar o cronograma até 2033.', sim:true}],
+   fazer:[
+    {t:'Confirmar com o contador o preenchimento na fase de teste', r:'Financeiro', p:'15/08'},
+    {t:'Acompanhar o cronograma da transição', r:'Financeiro', p:'contínuo'}],
+   empresa:'Impacto administrativo nesta etapa. O que merece atenção é o cronograma até 2033 — o radar de vigências acompanha as próximas datas.'}},
+
+ {id:'anac', nivel:'info', norma:'Aviação', doc:'Resolução · ANAC', orgao:'ANAC', eixo:'OUTROS',
+  titulo:'Requisitos operacionais para tripulação de aeronaves',
+  resumo:'Alteração em jornada e escala de tripulantes de voo.',
+  areas:[], leitura:'—', analisado:true, temImpacto:false, data:'28/07/2026', prazo:'—',
+  ignorar:'A Realtec não possui CNAE de transporte aéreo, não emprega tripulantes e não presta serviço no setor.'},
+
+ {id:'pesca', nivel:'info', norma:'Pesca', doc:'Portaria · MPA', orgao:'MPA', eixo:'OUTROS',
+  titulo:'Normas de segurança para embarcações pesqueiras',
+  resumo:'Requisitos de equipamento e tripulação em embarcações.',
+  areas:[], leitura:'—', analisado:true, temImpacto:false, data:'27/07/2026', prazo:'—',
+  ignorar:'Setor sem relação com os CNAEs cadastrados. Nenhuma norma cruzada com o perfil de relevância.'}
+];
+
+const CAFE = [
+ {ok:1, t:'Novas regras do consignado na rescisão em vigor', e:'Afeta o roteiro de desligamento e o eSocial'},
+ {ok:1, t:'Nova Portaria publicada pelo Ministério do Trabalho', e:'Consolidação de anexos de norma regulamentadora'},
+ {ok:1, t:'Atualização de SST identificada', e:'NR-35 — revisão do capítulo de planejamento'},
+ {ok:1, t:'Decisão judicial relevante encontrada', e:'TST — tese em incidente de recursos repetitivos'},
+ {ok:0, t:'Nenhuma alteração nova na NR-01 hoje', e:'A última segue sendo a de 26/05'},
+ {ok:0, t:'Duas publicações arquivadas sem impacto', e:'Aviação civil e pesca — fora do perfil'}
+];
+
+const CONFORM = {pct:88, analisadas:18, resolvidos:7, pendencias:2, documentos:45};
+
+const FONTES = [['DOU — Imprensa Nacional','12 min'],['LexML','40 min'],['Planalto','1 h'],
+ ['MTE — NRs','2 h'],['eSocial','2 h'],['FGTS Digital','3 h'],['Receita Federal','3 h'],
+ ['INSS','4 h'],['STF','5 h'],['STJ','5 h'],['TST','6 h'],['DataJud — CNJ','8 h'],['Mediador — MTE','11 h']];
+
+const GESTANTE = {
+ objetiva:'Não sem risco relevante. O entendimento consolidado do TST reconhece a estabilidade da gestante mesmo em contrato por tempo determinado — o que inclui o de experiência. Existe, porém, divergência viva entre tribunais.',
+ oficial:'A empregada gestante tem direito à estabilidade provisória prevista no art. 10, inciso II, alínea "b", do Ato das Disposições Constitucionais Transitórias, mesmo na hipótese de admissão mediante contrato por tempo determinado.',
+ ref:'Súmula 244 do TST, item III',
+ divergencia:[
+  {t:'TST — Súmula 244, item III', s:'Reconhece a estabilidade mesmo em contrato por tempo determinado. Aplicada em julgamento unânime da 5ª Turma que manteve indenização a empregada dispensada ao fim do contrato de experiência, já grávida.'},
+  {t:'STF — Tema 497', s:'Fixou que a garantia do art. 10, II, do ADCT exige apenas a anterioridade da gravidez à dispensa sem justa causa. Com base nessa tese, a 4ª Turma do TST deixou de reconhecer a estabilidade em contrato por prazo determinado.'}],
+ orientacao:'Não há pacificação. Há decisões nos dois sentidos dentro do próprio TST. A decisão exige avaliação do Jurídico caso a caso — este sistema não escolhe um lado onde os tribunais não escolheram.',
+ empresa:'A Realtec usa contrato de experiência em admissões para frentes de obra. Convém instruir o RH a verificar a condição antes de qualquer encerramento por decurso de prazo e padronizar o registro da data de ciência.',
+ conf:{f:'ALTO', v:'0,82', m:'Fundamento constitucional e súmula localizados, com texto conferido. Não é Muito Alto porque há divergência jurisprudencial não pacificada e a análise ainda não passou por revisão humana.'}
+};
+
+const ABST = {
+ t:'Não localizei fundamento oficial suficiente para responder essa consulta com segurança.',
+ d:'A busca no acervo não retornou dispositivo legal, portaria, norma regulamentadora ou entendimento jurisprudencial que sustente uma resposta. Prefiro dizer isso a construir uma resposta plausível sem base.',
+ s:'Se o tema deveria estar no acervo, pode indicar lacuna de cobertura de alguma fonte.'
+};
+
+const INDICE = [
+ {g:'Normas',t:'NR-1 — Disposições Gerais e GRO',s:'PGR · riscos psicossociais',i:'k-livro',k:'nr1 nr 1 pgr gro psicossocial saude mental',d:'det:nr1'},
+ {g:'Normas',t:'NR-35 — Trabalho em Altura',s:'Atividades acima de 2 metros',i:'k-livro',k:'nr35 nr 35 altura andaime cinto',d:'det:nr35'},
+ {g:'Normas',t:'NR-18 — Construção Civil',s:'Canteiros de obra',i:'k-livro',k:'nr18 obra canteiro construcao'},
+ {g:'Normas',t:'NR-7 — PCMSO',s:'ASO e exames ocupacionais',i:'k-livro',k:'nr7 pcmso aso exame admissional demissional'},
+ {g:'Normas',t:'NR-17 — Ergonomia',s:'AEP e adaptação do trabalho',i:'k-livro',k:'nr17 ergonomia aep'},
+ {g:'Órgãos',t:'eSocial',s:'Leiautes e eventos de SST',i:'k-doc',k:'esocial leiaute evento sst',d:'det:esocial'},
+ {g:'Órgãos',t:'Reforma Tributária — CBS/IBS',s:'Transição e cronograma',i:'k-doc',k:'reforma tributaria cbs ibs transicao',d:'det:cbs'},
+ {g:'Jurisprudência',t:'Súmula 244 do TST',s:'Estabilidade da gestante',i:'k-balanca',k:'sumula 244 tst gestante estabilidade experiencia',d:'ia:gestante'},
+     {g:'Normas',t:'NR-33 — Espaço Confinado',s:'Entrada e trabalho em espaço confinado',i:'k-livro',k:'nr33 espaco confinado'},
+ {g:'Normas',t:'NR-5 — CIPA',s:'Comissão interna de prevenção',i:'k-livro',k:'nr5 cipa comissao eleicao'},
+ {g:'Normas',t:'NR-4 — SESMT',s:'Dimensionamento do serviço especializado',i:'k-livro',k:'nr4 sesmt grau risco dimensionamento'},
+ {g:'Departamento Pessoal',t:'Consignado CLT — Crédito do Trabalhador',s:'Margem de 35% · eSocial · rescisão',i:'k-doc',k:'consignado credito trabalhador econsignado margem 35 emprestimo folha desconto ctps digital',d:'det:consignado'},
+ {g:'Departamento Pessoal',t:'FGTS e FGTS Digital',s:'Recolhimento, guias e prazos',i:'k-doc',k:'fgts digital guia recolhimento deposito multa rescisoria'},
+ {g:'Departamento Pessoal',t:'IRRF na folha',s:'Retenção e informe de rendimentos',i:'k-doc',k:'irrf imposto renda retencao informe rendimentos isencao',d:'det:irrf'},
+ {g:'Departamento Pessoal',t:'INSS — contribuição',s:'Alíquotas, RAT e FAP',i:'k-doc',k:'inss previdencia contribuicao rat fap aliquota'},
+ {g:'Departamento Pessoal',t:'Vale-transporte e PAT',s:'Desconto e concessão',i:'k-doc',k:'vale transporte refeicao alimentacao pat desconto'},
+ {g:'Departamento Pessoal',t:'Pensão alimentícia em folha',s:'Desconto e repasse',i:'k-doc',k:'pensao alimenticia desconto folha judicial'},
+ {g:'Trabalhista',t:'Menor aprendiz',s:'Cota, contrato e jornada',i:'k-livro',k:'menor aprendiz cota aprendizagem'},
+ {g:'Trabalhista',t:'Cota de pessoas com deficiência',s:'Percentual e fiscalização',i:'k-livro',k:'pcd deficiencia cota reserva vagas'},
+ {g:'Trabalhista',t:'Terceirização',s:'Responsabilidade subsidiária',i:'k-livro',k:'terceirizacao subsidiaria empreiteira dono da obra'},
+ {g:'Trabalhista',t:'Teletrabalho',s:'Regime, controle e custeio',i:'k-livro',k:'teletrabalho home office remoto hibrido'},
+ {g:'Trabalhista',t:'Igualdade salarial',s:'Relatório de transparência',i:'k-livro',k:'igualdade salarial transparencia relatorio mulher'},
+ {g:'Trabalhista',t:'Assédio no trabalho',s:'Prevenção e canal de denúncia',i:'k-livro',k:'assedio moral sexual canal denuncia'},
+ {g:'Proteção de dados',t:'LGPD na relação de trabalho',s:'Dados de saúde e monitoramento',i:'k-doc',k:'lgpd dados pessoais privacidade monitoramento saude'},
+ {g:'Ir para',t:'Início',s:'Visão do dia',i:'k-casa',k:'inicio painel home',d:'inicio'},
+ {g:'Ir para',t:'Alertas',s:'Alterações com impacto',i:'k-sino',k:'alerta alteracao impacto',d:'alertas'},
+ {g:'Ir para',t:'Plano de ação',s:'Tarefas com responsável e prazo',i:'k-lista',k:'acao tarefa checklist prazo',d:'acoes'},
+ {g:'Ir para',t:'O que posso ignorar',s:'Sem impacto identificado',i:'k-caixa',k:'ignorar arquivar sem impacto',d:'ignorar'},
+ {g:'Ir para',t:'Comparador',s:'Diferença entre versões',i:'k-diff',k:'comparar diff versao',d:'comparador'},
+ {g:'Ir para',t:'Linha do tempo',s:'Cronologia das alterações',i:'k-tempo',k:'linha tempo cronologia historico',d:'timeline'},
+ {g:'Ir para',t:'Logs e auditoria',s:'Trilha verificável',i:'k-log',k:'log auditoria trilha',d:'logs'},
+ {g:'Ir para',t:'Configurações',s:'Perfil, fontes e acesso',i:'k-eng',k:'config perfil fonte acesso',d:'config'}
+];
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SESSÃO — identidade vem do Supabase, não do código
+   Sem login, o sistema é da empresa. Com login, cada responsável
+   vê o próprio nome e a própria área em destaque.
+   ═══════════════════════════════════════════════════════════════ */
+const SB = {
+  url:'https://bwmvmynxqxfvazzqhazt.supabase.co',
+  anon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bXZteW54cXhmdmF6enFoYXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0Mzc4OTEsImV4cCI6MjEwMTAxMzg5MX0.EVPj_z__hB2hCZWMeCYlQJ-rJz0OMaVA_BAzf_9d9jo',
+  tk(){ try{ return sessionStorage.getItem('cil_tk'); }catch(e){ return null; } },
+  guardar(t){ try{ sessionStorage.setItem('cil_tk', t); }catch(e){} },
+  sair(){ try{ sessionStorage.removeItem('cil_tk'); }catch(e){} },
+
+  async entrar(email, senha){
+    const r = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
+      method:'POST', headers:{'apikey':this.anon,'Content-Type':'application/json'},
+      body: JSON.stringify({email, password:senha})});
+    if(!r.ok) throw new Error('E-mail ou senha incorretos.');
+    const d = await r.json();
+    this.guardar(d.access_token);
+    return d;
+  },
+  async rpc(fn, args={}){
+    const t = this.tk(); if(!t) throw new Error('sem sessão');
+    const r = await fetch(`${this.url}/rest/v1/rpc/${fn}`, {
+      method:'POST',
+      headers:{'apikey':this.anon,'Authorization':'Bearer '+t,'Content-Type':'application/json'},
+      body: JSON.stringify(args)});
+    if(!r.ok) throw new Error(`rpc ${fn}: ${r.status}`);
+    return r.json();
+  }
+};
+
+let CTX = null;
+
+async function carregarSessao(){
+  if(!SB.tk()) return;
+  try{
+    const r = await SB.rpc('contexto_ia');
+    const c = Array.isArray(r) ? r[0] : r;
+    if(!c || c.erro) throw new Error(c && c.erro || 'sem contexto');
+    CTX = c;
+    USUARIO.nome = c.usuario.nome;
+    USUARIO.cargo = c.usuario.cargo || c.usuario.perfil;
+    USUARIO.area = c.usuario.departamento;
+    USUARIO.autenticado = true;
+    render();
+  }catch(e){
+    SB.sair();
+    console.info('[CIL] sessão expirada ou inválida — modo empresa.');
+  }
+}
+
+function abrirEntrar(){
+  rota = 'entrar'; render(); window.scrollTo({top:0});
+}
+
+function vEntrar(){
+  return `<button class="voltar" onclick="ir('inicio')">
+    <svg class="ic ic-p"><use href="#k-esq"/></svg>Início</button>
+  <div class="cab"><h1>Entrar</h1>
+    <p>Acesso para responsáveis de RH, Departamento Pessoal, Jurídico, Segurança do Trabalho,
+       Engenharia e Diretoria da Realtec.</p></div>
+  <div class="bl" style="max-width:420px">
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t-2);margin-bottom:6px">E-mail</label>
+      <input id="loginEmail" type="email" autocomplete="username" placeholder="nome@realtec.com.br"
+        style="width:100%;height:42px;padding:0 13px;border:1px solid var(--l-2);border-radius:var(--r-m);
+               background:var(--sup-1);color:var(--t-1);font:inherit;font-size:14px;outline:none">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--t-2);margin-bottom:6px">Senha</label>
+      <input id="loginSenha" type="password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')fazerLogin()"
+        style="width:100%;height:42px;padding:0 13px;border:1px solid var(--l-2);border-radius:var(--r-m);
+               background:var(--sup-1);color:var(--t-1);font:inherit;font-size:14px;outline:none">
+    </div>
+    <div id="loginErro" style="display:none;font-size:12.5px;color:var(--vm);margin-bottom:12px"></div>
+    <button class="bt pr" style="width:100%" onclick="fazerLogin()" id="loginBt">Entrar</button>
+    <p style="font-size:11.5px;color:var(--t-3);margin-top:14px;line-height:1.55">
+      Sem login, o sistema mostra o conteúdo da empresa. Com login, cada responsável recebe
+      o impacto da própria área em destaque e a IA considera o contexto do setor.</p>
+  </div>`;
+}
+
+async function fazerLogin(){
+  const e=document.getElementById('loginEmail').value.trim();
+  const p=document.getElementById('loginSenha').value;
+  const erro=document.getElementById('loginErro');
+  const bt=document.getElementById('loginBt');
+  if(!e||!p){ erro.textContent='Preencha e-mail e senha.'; erro.style.display='block'; return; }
+  bt.textContent='Entrando…'; erro.style.display='none';
+  try{
+    await SB.entrar(e,p);
+    await carregarSessao();
+    if(USUARIO.autenticado) ir('inicio');
+    else throw new Error('Seu login existe, mas ainda não está vinculado a uma empresa. Fale com o administrador.');
+  }catch(x){
+    erro.textContent=x.message; erro.style.display='block';
+    bt.textContent='Entrar';
+  }
+}
+
+function sair(){ SB.sair(); USUARIO.nome=USUARIO.cargo=USUARIO.area=null;
+  USUARIO.autenticado=false; CTX=null; ir('inicio'); }
+
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ORIGEM DOS DADOS
+   Enquanto o coletor não estiver publicado e agendado, o que se vê
+   na tela é exemplo escrito à mão. O sistema diz isso na cara —
+   um sistema de conformidade que parece atualizado sem estar é
+   pior do que não ter sistema.
+   ═══════════════════════════════════════════════════════════════ */
+let COLETA_ATIVA = false;   // vira true quando houver coleta real no banco
+
+async function verificarColeta(){
+  if(!SB.tk()) return;
+  try{
+    const r = await fetch(`${SB.url}/rest/v1/coleta?status=eq.sucesso&select=iniciada_em&order=iniciada_em.desc&limit=1`,
+      {headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.tk()}});
+    const d = await r.json();
+    COLETA_ATIVA = Array.isArray(d) && d.length > 0;
+    render();
+  }catch(e){ /* sem sessão ou sem permissão: segue como demonstração */ }
+}
+
+function avisoOrigem(){
+  if(COLETA_ATIVA) return '';
+  return `<div class="aviso-origem">
+    <svg class="ic i"><use href="#k-alerta"/></svg>
+    <span class="t"><b>Conteúdo de exemplo.</b> A coleta automática ainda não foi ligada —
+      nada aqui veio do Diário Oficial. Confira sempre na fonte oficial.</span>
+    <button class="l" onclick="ir('config')">Como ligar</button>
+  </div>`;
+}
+
+/* ═══════════════ ESTADO ═══════════════ */
+let rota='inicio', alvo=null, filtro='todos', conversa=[], arquivados=new Set(), iaAberta=false;
+
+const NAVM=[{d:'inicio',t:'Início',i:'k-casa'},{d:'alertas',t:'Alertas',i:'k-sino',q:1},
+ {d:'acoes',t:'Ações',i:'k-lista'},{d:'documentos',t:'Acervo',i:'k-doc'},{d:'config',t:'Ajustes',i:'k-eng'}];
+
+const NAVL=[
+ {g:null,i:[{d:'inicio',t:'Início',ic:'k-casa'},{d:'alertas',t:'Alertas',ic:'k-sino',q:1},
+   {d:'acoes',t:'Plano de ação',ic:'k-lista'}]},
+ {g:'Operação',i:[{d:'ignorar',t:'Sem impacto',ic:'k-caixa'},
+   {d:'timeline',t:'Linha do tempo',ic:'k-tempo'}]},
+ {g:'Acervo',i:[{d:'documentos',t:'Documentos',ic:'k-doc'},{d:'comparador',t:'Comparador',ic:'k-diff'}]},
+ {g:'Sistema',i:[{d:'logs',t:'Logs e auditoria',ic:'k-log'},{d:'config',t:'Configurações',ic:'k-eng'}]}];
+
+const rel=()=>MUDANCAS.filter(m=>m.temImpacto&&!arquivados.has(m.id));
+const pend=()=>rel().filter(m=>!m.analisado);
+const crit=()=>rel().filter(m=>m.nivel==='crit');
+const ign=()=>MUDANCAS.filter(m=>!m.temImpacto&&!arquivados.has(m.id));
+
+function risco(){
+  if(crit().some(m=>!m.analisado)||(crit().length&&CONFORM.pendencias))
+    return {c:'vm',t:'Ação necessária',
+      d:`${crit().length} ${crit().length===1?'alteração crítica com pendência aberta':'alterações críticas com pendência aberta'}`};
+  if(pend().length) return {c:'am',t:'Análise pendente',
+    d:`${pend().length} ${pend().length===1?'alteração aguardando':'alterações aguardando'}`};
+  return {c:'vd',t:'Nenhuma pendência crítica',d:'Ambiente regulatório sob controle'};
+}
+
+/* ═══════════════ RENDER ═══════════════ */
+function ir(d,a){
+  if(d.startsWith('det:')){rota='det';alvo=d.slice(4);}
+  else if(d.startsWith('ia:')){abrirIa();iaPergunta(d.slice(3));return;}
+  else {rota=d;alvo=a||null;}
+  fecharPl(); document.getElementById('lat').classList.remove('on');
+  render(); window.scrollTo({top:0});
+}
+
+function render(){
+  navL(); navM(); faixaRisco();
+  const eN=document.getElementById('avNome'), eC=document.getElementById('avCargo'), eI=document.getElementById('avIni');
+  if(USUARIO.autenticado){
+    eN.textContent=USUARIO.nome;
+    eC.textContent=[USUARIO.cargo,USUARIO.area].filter(Boolean).join(' · ');
+    eI.textContent=iniciais();
+  }else{
+    eN.textContent='Realtec Engenharia';
+    eC.textContent='Entrar para personalizar';
+    eI.innerHTML='<svg class="ic ic-p"><use href="#k-empresa"/></svg>';
+  }
+  const V={inicio:vInicio,alertas:vAlertas,det:vDet,acoes:vAcoes,
+    ignorar:vIgnorar,documentos:vDocs,comparador:vComp,timeline:vTime,logs:vLogs,
+    config:vConfig,entrar:vEntrar};
+  document.getElementById('pag').innerHTML=(V[rota]||vInicio)();
+}
+
+function faixaRisco(){
+  const r=risco();
+  document.getElementById('faixaRisco').innerHTML=`<div class="risco-in r-${r.c}">
+    <span class="farol"></span><span class="risco-t">Risco Realtec · ${r.t}</span>
+    <span class="risco-d">${r.d}</span>
+    <button class="risco-a" onclick="ir('alertas')">Ver alertas <svg class="ic ic-p"><use href="#k-dir"/></svg></button></div>`;
+}
+
+function navL(){
+  document.getElementById('latNav').innerHTML=NAVL.map(g=>`
+   ${g.g?`<div class="lat-g">${g.g}</div>`:''}
+   ${g.i.map(it=>{
+     const q=it.d==='alertas'?pend().length:it.d==='ignorar'?ign().length:0;
+     const calmo = it.d==='ignorar' ? ' calmo' : '';
+     return `<button class="lat-i ${rota===it.d?'on':''}" onclick="ir('${it.d}')">
+      <svg class="ic"><use href="#${it.ic}"/></svg>${it.t}${q?`<span class="q${calmo}">${q}</span>`:''}</button>`;
+   }).join('')}`).join('');
+}
+
+function navM(){
+  document.getElementById('navM').innerHTML=NAVM.map(n=>{
+    const q=n.d==='alertas'?pend().length:0;
+    return `<button class="${rota===n.d?'on':''}" onclick="ir('${n.d}')">
+      <svg class="ic"><use href="#${n.i}"/></svg>${n.t}${q?`<span class="q">${q}</span>`:''}</button>`;
+  }).join('');
+}
+
+/* ─── INÍCIO: informação primeiro ─── */
+function vInicio(){
+  const c=saudacaoHora(), pn=primeiroNome();
+  const lista=filtro==='todos'?rel():filtro==='crit'?crit():filtro==='pend'?pend():
+    rel().filter(m=>m.areas.some(a=>a.toLowerCase().includes(USUARIO.area.slice(0,3).toLowerCase())));
+  const total=pend().length;
+
+  return `
+  ${avisoOrigem()}
+  <div class="cab">
+    <h1>${pn ? `${c}, ${pn}` : c}</h1>
+    <p>${total?`${total} ${total===1?'alteração precisa':'alterações precisam'} de análise hoje.`:'Nenhuma alteração pendente de análise.'}</p>
+  </div>
+
+  <div class="nums">
+    <button class="nm vm" onclick="setFiltro('crit')"><div class="v">${crit().length}</div>
+      <div class="r"><span class="pt"></span>Críticas</div></button>
+    <button class="nm am" onclick="setFiltro('pend')"><div class="v">${pend().length}</div>
+      <div class="r"><span class="pt"></span>Aguardando análise</div></button>
+    <button class="nm nt" onclick="ir('acoes')"><div class="v">${CONFORM.pendencias}</div>
+      <div class="r"><span class="pt"></span>Ações em aberto</div></button>
+    <button class="nm vd" onclick="ir('ignorar')"><div class="v">${ign().length}</div>
+      <div class="r"><span class="pt"></span>Sem impacto</div></button>
+  </div>
+
+  <div class="atalhos">
+    ${[['todos','Todas',''],['crit','Críticas','vm'],['pend','Pendentes','am']]
+      .concat(USUARIO.area?[['area','Minha área','']]:[])
+      .map(([k,t,p])=>`<button class="at ${filtro===k?'on':''}" onclick="setFiltro('${k}')">
+        ${p?`<span class="pt ${p}"></span>`:''}${t}
+        <b>${k==='todos'?rel().length:k==='crit'?crit().length:k==='pend'?pend().length:
+          rel().filter(m=>m.areas.some(a=>a.toLowerCase().includes(USUARIO.area.slice(0,3).toLowerCase()))).length}</b>
+      </button>`).join('')}
+  </div>
+
+  <section class="sec">
+    <div class="sec-h"><h2>O que mudou</h2><span class="c">${lista.length}</span>
+      <button class="l" onclick="ir('alertas')">Ver tudo <svg class="ic ic-p"><use href="#k-dir"/></svg></button></div>
+    ${lista.length?lista.map(cartao).join(''):semItens('Nada neste filtro','Ajuste os atalhos acima para ver outras alterações.')}
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Resumo do café</h2>
+      <span class="c">4 min de leitura</span></div>
+    <div class="ct"><div class="ct-in">
+      ${CAFE.map(i=>`<div class="lin ${i.ok?'sim':'nao'}">
+        <svg class="ic ic-p mk"><use href="#${i.ok?'k-ok':'k-menos'}"/></svg>
+        <span style="flex:1">${i.t}<s style="display:block;font-size:11.5px;color:var(--t-3);text-decoration:none;margin-top:2px">${i.e}</s></span>
+      </div>`).join('')}
+    </div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Conformidade</h2></div>
+    ${painelConf()}
+  </section>`;
+}
+
+function setFiltro(f){ filtro=f; if(rota!=='inicio')rota='inicio'; render(); }
+
+function cartao(m){
+  const et=m.nivel==='crit'?['vm','Crítica']:m.nivel==='alto'?['am','Importante']:
+           m.nivel==='medio'?['nt','Média']:['nt','Informativa'];
+  return `<button class="ct" onclick="ir('det:${m.id}')">
+    <div class="ct-in">
+      <div class="ct-meta">
+        <span class="et ${et[0]}"><span class="pt"></span>${et[1]}</span>
+        ${!m.analisado?'<span class="et va">aguardando análise</span>':''}
+        ${COLETA_ATIVA?'':'<span class="et va">exemplo</span>'}
+        <span>${m.orgao}</span><span class="sep"></span>
+        <span class="num">${m.data}</span><span class="sep"></span>
+        <span>${m.leitura}</span>
+      </div>
+      <h3>${m.titulo}</h3>
+      <p class="rz">${m.resumo}</p>
+    </div>
+    <div class="ct-pe">
+      <span class="areas">${m.areas.map(a=>`<span class="area">${a}</span>`).join('')}</span>
+      ${m.prazo!=='—'?`<span class="pz ${m.prazoUrg?'urg':''}">
+        <svg class="ic ic-p"><use href="#k-relogio"/></svg>${m.prazo}</span>`:''}
+      <span class="ac">Entender <svg class="ic ic-p"><use href="#k-dir"/></svg></span>
+    </div></button>`;
+}
+
+function semItens(b,p){
+  return `<div class="ct"><div class="vazio">
+    <svg class="ic ic-g i" style="margin:0 auto"><use href="#k-ok"/></svg>
+    <b>${b}</b><p>${p}</p></div></div>`;
+}
+
+function painelConf(){
+  const p=CONFORM.pct, cor=p>=90?'var(--vd)':p>=75?'var(--am)':'var(--vm)';
+  return `<div class="ct"><div class="ct-in">
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+      <div style="position:relative;width:70px;height:70px;flex:none">
+        <svg width="70" height="70" viewBox="0 0 70 70" style="transform:rotate(-90deg)">
+          <circle cx="35" cy="35" r="29" fill="none" stroke="var(--l-1)" stroke-width="6"/>
+          <circle cx="35" cy="35" r="29" fill="none" stroke="${cor}" stroke-width="6" stroke-linecap="round"
+            stroke-dasharray="${2*Math.PI*29}" stroke-dashoffset="${2*Math.PI*29*(1-p/100)}"/></svg>
+        <div style="position:absolute;inset:0;display:grid;place-items:center;font-size:17px;
+          font-weight:700;letter-spacing:-.03em;color:${cor}" class="num">${p}%</div>
+      </div>
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">Conformidade atual</div>
+        <p style="font-size:12.8px;color:var(--t-2);line-height:1.55">
+          O índice cai enquanto houver pendência aberta em alteração crítica. Não sobe por volume analisado.</p>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px;margin-top:16px">
+      ${[[CONFORM.analisadas,'Analisadas',''],[CONFORM.resolvidos,'Resolvidos',''],
+         [CONFORM.pendencias,'Pendências','am'],[CONFORM.documentos,'Documentos','']]
+        .map(([v,r,c])=>`<div style="padding:11px 13px;border-radius:var(--r-m);background:var(--sup-2)">
+          <div class="num" style="font-size:18px;font-weight:700;letter-spacing:-.02em;
+            ${c==='am'?'color:var(--am)':''}">${v}</div>
+          <div style="font-size:11.5px;color:var(--t-2);margin-top:3px">${r}</div></div>`).join('')}
+    </div>
+  </div></div>`;
+}
+
+/* ─── ALERTAS ─── */
+function vAlertas(){
+  return `${avisoOrigem()}<div class="cab"><h1>Alertas</h1>
+    <p>${rel().length} alterações com impacto identificado · ${pend().length} aguardam análise.</p></div>
+  <section class="sec"><div class="sec-h"><h2>Com impacto</h2><span class="c">${rel().length}</span></div>
+    ${rel().map(cartao).join('')}</section>
+  ${ign().length?`<section class="sec">
+    <div class="sec-h"><h2>Sem impacto</h2><span class="c">${ign().length}</span>
+      <button class="l" onclick="ir('ignorar')">Revisar <svg class="ic ic-p"><use href="#k-dir"/></svg></button></div>
+    ${ign().map(cartao).join('')}</section>`:''}`;
+}
+
+/* ─── DETALHE: as 6 perguntas ─── */
+function vDet(){
+  const m=MUDANCAS.find(x=>x.id===alvo)||MUDANCAS[0];
+  if(!m.seis) return vIgnorar();
+  const s=m.seis;
+  const et=m.nivel==='crit'?['vm','Crítica']:m.nivel==='alto'?['am','Importante']:['nt','Média'];
+  const B=(n,t,html)=>`<div class="bl"><div class="bl-h"><span class="bl-n">${n}</span>
+    <strong>${t}</strong></div>${html}</div>`;
+
+  return `<button class="voltar" onclick="ir('alertas')"><svg class="ic ic-p"><use href="#k-esq"/></svg>Alertas</button>
+  <div class="cab">
+    <div class="ct-meta" style="margin-bottom:10px">
+      <span class="et ${et[0]}"><span class="pt"></span>${et[1]}</span>
+      <span>${m.doc}</span><span class="sep"></span><span class="num">${m.data}</span>
+      <span class="sep"></span><span>${m.prazo}</span></div>
+    <h1>${m.titulo}</h1><p>${m.resumo}</p>
+  </div>
+
+  ${B(1,'O que mudou?',`<p>${s.mudou}</p>
+    ${m.oficial?`<div class="lei"><p>${m.oficial}</p>
+      <div class="fn"><svg class="ic ic-p"><use href="#k-link"/></svg>Texto oficial · ${m.ref}</div></div>`:''}`)}
+  ${B(2,'Qual o impacto?',`<p>${s.impacto}</p>`)}
+  ${B(3,'Qual o risco?',`<div class="av-risco ${s.risco.n}">
+    <svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+    <div><b>${s.risco.t}</b><p>${s.risco.d}</p></div></div>`)}
+  ${B(4,'Quem é afetado?',s.afetados.map(a=>`<div class="lin ${a.sim?'sim':'nao'}">
+    <svg class="ic ic-p mk"><use href="#${a.sim?'k-ok':'k-menos'}"/></svg>
+    <b>${a.a}</b><span>${a.s}</span></div>`).join(''))}
+  ${B(5,'O que precisa ser feito?',s.fazer.map(f=>`<div class="tarefa">
+    <div class="cx" onclick="tick(this)"><svg class="ic ic-p"><use href="#k-tick"/></svg></div>
+    <div class="tf"><p>${f.t}</p><s>${f.r} · até ${f.p}</s></div></div>`).join('')
+    +`<div class="bts"><button class="bt sc" onclick="ir('acoes')">
+      Abrir plano completo <svg class="ic ic-p"><use href="#k-dir"/></svg></button></div>`)}
+
+  <div class="impacto-emp">
+    <div class="h"><svg class="ic"><use href="#k-empresa"/></svg><strong>Como isso impacta a Realtec?</strong></div>
+    <p>${s.empresa}</p>
+  </div>
+
+  <div class="bts">
+    <button class="bt pr" onclick="abrirIa();iaPergunta('${m.id}')">
+      <svg class="ic ic-p"><use href="#k-ia"/></svg>Perguntar à IA sobre isso</button>
+    <button class="bt sc" onclick="ir('comparador')">Comparar versões</button>
+  </div>`;
+}
+
+function tick(el){ el.classList.toggle('ok'); el.parentElement.querySelector('.tf').classList.toggle('ok'); }
+
+/* ─── DEMAIS TELAS ─── */
+function vAcoes(){
+  const its=rel().filter(m=>m.seis);
+  return `<div class="cab"><h1>Plano de ação</h1>
+    <p>Ações geradas a partir das análises, com responsável e prazo.</p></div>
+  ${its.map(m=>`<section class="sec">
+    <div class="sec-h"><h2>${m.norma}</h2><span class="c">${m.seis.fazer.length} ações</span></div>
+    <div class="ct"><div class="ct-in">${m.seis.fazer.map(f=>`<div class="tarefa">
+      <div class="cx" onclick="tick(this)"><svg class="ic ic-p"><use href="#k-tick"/></svg></div>
+      <div class="tf"><p>${f.t}</p><s>${f.r} · até ${f.p}</s></div></div>`).join('')}</div></div>
+  </section>`).join('')}`;
+}
+
+function vIgnorar(){
+  const its=ign();
+  return `<div class="cab"><h1>Sem impacto</h1>
+    <p>Publicações analisadas que não apresentam impacto para a Realtec. O motivo do descarte fica registrado.</p></div>
+  ${its.length?its.map(m=>`<div class="ct"><div class="ct-in">
+    <div class="ct-meta"><span class="et va">arquivável</span><span>${m.orgao}</span>
+      <span class="sep"></span><span class="num">${m.data}</span></div>
+    <h3>${m.titulo}</h3><p class="rz">${m.resumo}</p>
+    <div class="motivo" style="margin-top:12px"><b>Sem impacto identificado para a Realtec neste momento.</b><br>${m.ignorar}</div>
+    <div class="bts"><button class="bt sc" onclick="arquivar('${m.id}')">
+      <svg class="ic ic-p"><use href="#k-caixa"/></svg>Arquivar</button></div>
+  </div></div>`).join(''):semItens('Nada a revisar','Todas as publicações sem impacto já foram arquivadas.')}`;
+}
+function arquivar(id){ arquivados.add(id); render(); }
+
+function vDocs(){
+  const G={
+  'Trabalhista — contrato e jornada':['CLT — Consolidação das Leis do Trabalho',
+    'Constituição Federal — direitos sociais (art. 6º ao 11)','Jornada, horas extras e sobreaviso',
+    'Banco de horas e compensação','Escalas e trabalho em turnos','Teletrabalho e trabalho híbrido',
+    'Férias e décimo terceiro','Aviso prévio e rescisão','Estabilidades provisórias',
+    'Poder disciplinar — advertência e suspensão','Justa causa'],
+  'Departamento Pessoal — folha e obrigações':['Consignado CLT — Crédito do Trabalhador',
+    'Margem consignável e averbação','eSocial — leiautes e eventos','FGTS e FGTS Digital',
+    'INSS — contribuição previdenciária','IRRF — retenção na folha','Informe de rendimentos',
+    'Vale-transporte','Vale-refeição e PAT','PLR — participação nos lucros',
+    'Salário-família e salário-maternidade','Pensão alimentícia em folha'],
+  'Normas Regulamentadoras':['NR-1 — Disposições Gerais e GRO','NR-4 — SESMT','NR-5 — CIPA',
+    'NR-6 — EPI','NR-7 — PCMSO','NR-9 — Agentes nocivos','NR-10 — Eletricidade',
+    'NR-12 — Máquinas e equipamentos','NR-15 — Insalubridade','NR-16 — Periculosidade',
+    'NR-17 — Ergonomia e AEP','NR-18 — Construção civil','NR-23 — Proteção contra incêndio',
+    'NR-33 — Espaço confinado','NR-35 — Trabalho em altura'],
+  'Saúde e segurança — documentos':['PGR — Programa de Gerenciamento de Riscos',
+    'PCMSO — Controle médico','LTCAT — Laudo técnico','PPP — Perfil profissiográfico',
+    'ASO — Atestado de saúde ocupacional','CAT — Comunicação de acidente','Ordem de serviço de segurança'],
+  'Inclusão e grupos protegidos':['Menor aprendiz — cota e contrato','Cota de pessoas com deficiência',
+    'Trabalho da gestante e lactante','Igualdade salarial e relatório de transparência',
+    'Prevenção e combate ao assédio'],
+  'Terceirização e contratos':['Terceirização e responsabilidade subsidiária',
+    'Empreiteira e dono da obra','Cessão de mão de obra e retenção de 11%',
+    'Documentação exigida do contratado'],
+  'Tributário':['Reforma tributária — CBS e IBS','Cronograma de transição até 2033',
+    'Regime de apuração e créditos','Retenções em nota de serviço'],
+  'Jurisprudência':['Súmulas do TST','Orientações Jurisprudenciais','Teses de repercussão geral — STF',
+    'Temas repetitivos — STJ','Divergências entre TRTs'],
+  'Negociação coletiva':['Convenções coletivas por base territorial','Acordos coletivos',
+    'Termos aditivos','Data-base e piso da categoria'],
+  'Proteção de dados':['LGPD aplicada à relação de trabalho','Tratamento de dados de saúde ocupacional',
+    'Monitoramento e privacidade do empregado'],
+  'Documentos internos':['Procedimentos operacionais','Políticas internas','Treinamentos e reciclagens',
+    'Contratos e aditivos']};
+  const total=Object.values(G).reduce((a,b)=>a+b.length,0);
+  return `<div class="cab"><h1>Acervo</h1>
+    <p>${total} temas monitorados. Cada um com texto oficial, versões, comparação, impactos e histórico.</p></div>
+  ${Object.entries(G).map(([g,its])=>`<section class="sec">
+    <div class="sec-h"><h2>${g}</h2><span class="c">${its.length}</span></div>
+    <div class="lista">${its.map(i=>`<button class="li" onclick="${
+      i.startsWith('NR-1 ')?"ir('det:nr1')":
+      i.startsWith('NR-35')?"ir('det:nr35')":
+      i.startsWith('Consignado')||i.startsWith('Margem')?"ir('det:consignado')":
+      i.startsWith('eSocial')?"ir('det:esocial')":
+      i.startsWith('IRRF')?"ir('det:irrf')":
+      i.startsWith('Reforma')?"ir('det:cbs')":"abrirPl()"}">
+      <svg class="ic" style="color:var(--t-3);flex:none"><use href="#k-livro"/></svg>
+      <span class="li-t"><b>${i}</b></span>
+      <svg class="ic ic-p ch"><use href="#k-cheq"/></svg></button>`).join('')}</div>
+  </section>`).join('')}`;
+}
+
+function vComp(){
+  return `<div class="cab"><h1>Comparador</h1><p>NR-1 · redação anterior comparada com a vigente.</p></div>
+  <div class="bl"><div class="bl-h"><span class="bl-n">−</span><strong>Redação anterior</strong></div>
+    <div class="lei" style="border-left-color:var(--vm);margin:0">
+      <p>Identificação dos perigos e avaliação dos riscos ocupacionais de natureza física, química, biológica e ergonômica.</p>
+      <div class="fn">Capítulo 1.5 · antes da Portaria 1.419/2024</div></div></div>
+  <div class="bl"><div class="bl-h"><span class="bl-n">+</span><strong>Redação vigente</strong></div>
+    <div class="lei" style="border-left-color:var(--vd);margin:0">
+      <p>Identificação dos perigos e avaliação dos riscos ocupacionais, incluídos os fatores de risco psicossociais relacionados ao trabalho.</p>
+      <div class="fn">Capítulo 1.5 · redação atual</div></div></div>
+  <div class="bl"><div class="bl-h"><span class="bl-n"><svg class="ic ic-p"><use href="#k-ia"/></svg></span>
+    <strong>Resumo das diferenças</strong></div>
+    <p>A redação passou a incluir expressamente os fatores de risco psicossociais no processo de identificação e avaliação, antes restrito às naturezas física, química, biológica e ergonômica. Foi acrescentada exigência de plano de ação com responsáveis, prazos e acompanhamento.</p>
+    <div class="tags"><span class="tag">1 alterado</span><span class="tag">1 incluído</span>
+      <span class="tag">0 revogados</span><span class="tag">2 de 2 citações validadas</span></div></div>`;
+}
+
+function vTime(){
+  const T=[['2026','26 de maio','MTE','NR-1 — início da fiscalização punitiva dos riscos psicossociais','vm'],
+   ['2026','14 de julho','MTE','NR-35 — revisão do capítulo de planejamento','am'],
+   ['2026','21 de julho','eSocial','Nova versão de leiaute com campo obrigatório em SST','am'],
+   ['2025','—','MTE','Portaria nº 765 — prorroga a exigibilidade da NR-1 para 26/05/2026','am'],
+   ['2024','27 de agosto','MTE','Portaria nº 1.419 — inclui riscos psicossociais no capítulo 1.5','vm']];
+  return `<div class="cab"><h1>Linha do tempo</h1><p>Cronologia das alterações que afetam o perfil da Realtec.</p></div>
+  <div class="lista">${T.map(([a,d,o,t,c])=>`<div class="li">
+    <span class="et ${c}" style="padding:2px 6px"><span class="pt"></span></span>
+    <span class="li-t"><b>${t}</b><s>${d} · ${o} · ${a}</s></span></div>`).join('')}</div>`;
+}
+
+function vLogs(){
+  const L=[['08:42','Departamento Pessoal','Consultou a IA sobre gestante em contrato de experiência'],
+   ['08:40','Sistema','Análise gerada · sistema@v3 · 12 de 12 citações validadas'],
+   ['08:12','Sistema','Coleta do DOU — 412 itens · 6 relevantes após triagem'],
+   ['08:11','Segurança do Trabalho','Validou e publicou a análise da NR-1'],
+   ['07:58','Sistema','Alerta crítico despachado para SESMT, RH e Jurídico'],
+   ['07:42','Sistema','Sincronização concluída · 13 de 13 fontes']];
+  return `<div class="cab"><h1>Logs e auditoria</h1>
+    <p>Trilha somente de inserção, encadeada por hash. Registra quem visualizou, analisou e aprovou.</p></div>
+  <div class="ct" style="margin-bottom:14px"><div class="ct-in" style="display:flex;align-items:center;gap:12px">
+    <svg class="ic ic-g" style="color:var(--vd);flex:none"><use href="#k-escudo"/></svg>
+    <div><div style="font-size:13.5px;font-weight:600;color:var(--vd)">Integridade verificada</div>
+      <p style="font-size:12.8px;color:var(--t-2);margin-top:2px">48.213 registros · cadeia íntegra desde a origem</p></div>
+  </div></div>
+  <div class="lista">${L.map(([h,u,d])=>`<div class="li">
+    <span class="num" style="font-size:11.5px;color:var(--t-3);flex:none;width:40px">${h}</span>
+    <span class="li-t"><b style="font-weight:400">${d}</b><s>${u}</s></span></div>`).join('')}</div>`;
+}
+
+function vConfig(){
+  const nrs=['NR-1','NR-4','NR-5','NR-6','NR-7','NR-9','NR-10','NR-12','NR-15','NR-16','NR-17','NR-18','NR-23','NR-33','NR-35'];
+  return `<div class="cab"><h1>Configurações</h1>
+    <p>O perfil de relevância descreve a Realtec — é ele que separa ruído de risco.</p></div>
+  <section class="sec"><div class="sec-h"><h2>Perfil de relevância</h2></div>
+    <div class="ct"><div class="ct-in">
+      <div style="font-size:13px;color:var(--t-2)">Normas monitoradas com prioridade</div>
+      <div class="tags">${nrs.map(n=>`<span class="tag">${n}</span>`).join('')}</div></div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Saúde das fontes</h2><span class="c">13 de 13</span></div>
+    <div class="lista">${FONTES.map(([n,q])=>`<div class="li">
+      <svg class="ic ic-p" style="color:var(--vd);flex:none"><use href="#k-ok"/></svg>
+      <span class="li-t"><b style="font-weight:400">${n}</b></span>
+      <span class="num" style="font-size:11.5px;color:var(--t-3)">${q}</span></div>`).join('')}</div>
+    <p style="font-size:11.5px;color:var(--t-3);margin-top:9px">
+      Se uma fonte parar, aparece aqui e no indicador. O sistema nunca finge estar atualizado.</p></section>
+  <section class="sec"><div class="sec-h"><h2>Perfis de acesso</h2></div>
+    <div class="lista">${[
+      ['Administrador','Configura fontes, prompts e integrações'],
+      ['Diretoria','Vê tudo · aprova planos de ação'],
+      ['Jurídico','Valida análises críticas e divergências'],
+      ['RH','Conduz ações de pessoal e treinamentos'],
+      ['Departamento Pessoal','Folha, eSocial, FGTS e consignado'],
+      ['SST','Valida análises de segurança e mantém PGR e PCMSO'],
+      ['Engenharia','Procedimentos de obra e análise de risco']]
+      .map(([p,d])=>`<div class="li"><svg class="ic" style="color:var(--t-3);flex:none"><use href="#k-users"/></svg>
+      <span class="li-t"><b>${p}</b><s>${d}</s></span></div>`).join('')}</div>
+    <p style="font-size:11.5px;color:var(--t-3);margin-top:9px">
+      Todo acesso é de responsável por uma área. Não há perfil de usuário comum.</p></section>
+  ${USUARIO.autenticado?`<div class="bts" style="margin-top:22px">
+    <button class="bt sc" onclick="sair()">Sair da conta</button></div>`:
+   `<div class="bts" style="margin-top:22px">
+    <button class="bt pr" onclick="abrirEntrar()">Entrar</button></div>`}
+  <p style="font-size:11.5px;color:var(--t-3);text-align:center;margin-top:28px;line-height:1.6">
+    ${USUARIO.autenticado?'Conectado ao banco da Realtec.':'Sem sessão · conteúdo ilustrativo'}<br>
+    Confirme na fonte oficial antes de decidir.</p>`;
+}
+
+/* ═══════════════ IA AO CANTO ═══════════════ */
+function abrirIa(){
+  iaAberta=true;
+  document.getElementById('iaPn').classList.add('on');
+  document.getElementById('veuIa').classList.add('on');
+  document.getElementById('iaPonto').style.display='none';
+  document.getElementById('iaFala').classList.remove('on');
+  iaRender();
+  setTimeout(()=>{const i=document.getElementById('iaInput'); if(window.innerWidth>1023&&i)i.focus();},260);
+}
+function fecharIa(){
+  iaAberta=false;
+  document.getElementById('iaPn').classList.remove('on');
+  document.getElementById('veuIa').classList.remove('on');
+}
+
+function iaRender(){
+  const c=document.getElementById('iaCorpo');
+  if(!conversa.length){
+    c.innerHTML=`<div class="msg-a">
+      <div class="tx">${primeiroNome() ? `${saudacaoHora()}, ${primeiroNome()}.` : `${saudacaoHora()}.`} Acompanho legislação trabalhista, normas de segurança, folha, tributos e jurisprudência.</div>
+      <div class="tx" style="color:var(--t-2)">Mostro sempre de onde tirei cada afirmação. Quando não houver fundamento oficial, eu digo — não preencho a lacuna.</div>
+    </div>
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+      color:var(--t-3);margin:18px 0 9px">Perguntas frequentes</div>
+    ${[['Posso demitir uma gestante em contrato de experiência?','gestante'],
+       ['O que mudou na NR-1?','nr1'],['O que preciso fazer sobre a NR-35?','nr35'],
+       ['Qual o prazo de validade de um crachá funcional?','abst']]
+      .map(([q,k])=>`<button class="atalho-ia" onclick="iaPergunta('${k}')">${q}</button>`).join('')}`;
+    return;
+  }
+  c.innerHTML=conversa.map(iaTurno).join('');
+  c.scrollTop=c.scrollHeight;
+}
+
+function iaTurno(t){
+  if(t.u) return `<div class="msg-u">${t.u}</div>`;
+  if(t.p) return `<div class="msg-a"><div class="pensa"><i></i><i></i><i></i> Consultando o acervo…</div></div>`;
+  if(t.api) return iaTurnoAPI(t.api);
+
+  if(t.k==='abst') return `<div class="msg-a">
+    <div class="av-risco am"><svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+      <div><b>Sem fundamento suficiente</b><p style="color:var(--t-1);margin-top:4px">${ABST.t}</p></div></div>
+    <div class="tx" style="margin-top:11px">${ABST.d}</div>
+    <div class="tx" style="color:var(--t-2);font-size:12.8px">${ABST.s}</div></div>`;
+
+  if(t.k==='gestante'){
+    const r=GESTANTE;
+    return `<div class="msg-a">
+      <div class="qm"><svg class="ic ic-p"><use href="#k-ia"/></svg>Resposta objetiva</div>
+      <div class="tx">${r.objetiva}</div>
+      <div class="lei"><p>${r.oficial}</p>
+        <div class="fn"><svg class="ic ic-p"><use href="#k-link"/></svg>${r.ref}</div></div>
+      <div class="dvg"><div class="h"><svg class="ic ic-p"><use href="#k-balanca"/></svg>
+        <b>Divergência entre tribunais</b></div>
+        ${r.divergencia.map(p=>`<div class="p"><b>${p.t}</b><p>${p.s}</p></div>`).join('')}
+        <div class="o">${r.orientacao}</div></div>
+      <div class="mini"><b>Como isso impacta a Realtec</b><p>${r.empresa}</p></div>
+      <div class="conf-x"><div class="fx"><b class="f-alto">Alto</b><s>${r.conf.v}</s></div>
+        <p>${r.conf.m}</p></div></div>`;
+  }
+
+  const m=MUDANCAS.find(x=>x.id===t.k);
+  if(!m||!m.seis) return '';
+  return `<div class="msg-a">
+    <div class="qm"><svg class="ic ic-p"><use href="#k-ia"/></svg>O que mudou</div>
+    <div class="tx">${m.seis.mudou}</div>
+    <div class="av-risco ${m.seis.risco.n}" style="margin-top:12px">
+      <svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+      <div><b>${m.seis.risco.t}</b><p>${m.seis.risco.d}</p></div></div>
+    <div class="mini"><b>Como isso impacta a Realtec</b><p>${m.seis.empresa}</p></div>
+    <button class="atalho-ia" style="margin-top:12px" onclick="fecharIa();ir('det:${m.id}')">
+      Abrir análise completa →</button></div>`;
+}
+
+/* Renderiza a resposta real vinda da Edge Function, no mesmo formato
+   visual das respostas de demonstração.                              */
+function iaTurnoAPI(r){
+  if(r.abstencao||r.origem==='bloqueada') return `<div class="msg-a">
+    <div class="av-risco am"><svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+      <div><b>${r.origem==='bloqueada'?'Citação sem lastro':'Sem fundamento suficiente'}</b>
+      <p style="color:var(--t-1);margin-top:4px">${r.texto||''}</p></div></div>
+    ${r.detalhe?`<div class="tx" style="margin-top:11px">${r.detalhe}</div>`:''}</div>`;
+
+  const c=r.grau_confianca||{};
+  const sel={banco_local:'resposta validada',cache:'do cache',claude:'analisado agora'}[r.origem]||'';
+  const imp=r.impactos||{};
+  const areaU=(USUARIO.area||'').toUpperCase().slice(0,3) || '\u0000';
+
+  return `<div class="msg-a">
+    <div class="qm"><svg class="ic ic-p"><use href="#k-ia"/></svg>Resposta objetiva
+      ${sel?`<span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0">${sel}</span>`:''}</div>
+    <div class="tx">${r.resposta_objetiva?.texto||''}</div>
+    ${r.explicacao?.texto?`<div class="tx" style="color:var(--t-2);margin-top:9px">${r.explicacao.texto}</div>`:''}
+    ${(r.explicacao?.termos||[]).map(x=>`<div class="mini"><b>${x.termo}</b><p>${x.significado}</p></div>`).join('')}
+    ${r.fundamentacao?.texto_oficial?`<div class="lei"><p>${r.fundamentacao.texto_oficial}</p>
+      <div class="fn"><svg class="ic ic-p"><use href="#k-link"/></svg>${r.fundamentacao.referencia||'fonte oficial'}</div></div>`:''}
+    ${r.divergencia?`<div class="dvg"><div class="h"><svg class="ic ic-p"><use href="#k-balanca"/></svg>
+      <b>Divergência entre tribunais</b></div>
+      ${(r.divergencia.posicoes||[]).map(p=>`<div class="p"><b>${p.tribunal||p.t||''}</b><p>${p.entendimento||p.s||''}</p></div>`).join('')}
+      ${r.divergencia.orientacao?`<div class="o">${r.divergencia.orientacao}</div>`:''}</div>`:''}
+    ${Object.keys(imp).length?`<div class="mini"><b>Impacto por área</b>
+      ${Object.entries(imp).map(([a,v])=>v&&v.disponivel!==false
+        ? `<p style="margin-top:6px"><b style="color:${a.startsWith(areaU)?'var(--az-f)':'var(--t-1)'};
+           text-transform:none;letter-spacing:0;font-size:12.5px;display:inline">${a}:</b> ${v.texto||''}</p>`
+        : `<p style="margin-top:6px;color:var(--t-3)"><b style="text-transform:none;letter-spacing:0;
+           font-size:12.5px;display:inline;color:var(--t-3)">${a}:</b> ${v?.motivo||'sem impacto identificado'}</p>`).join('')}
+    </div>`:''}
+    ${(r.checklist||[]).length?`<div style="margin-top:12px">
+      ${r.checklist.map(x=>`<div class="tarefa"><div class="cx" onclick="tick(this)">
+        <svg class="ic ic-p"><use href="#k-tick"/></svg></div>
+        <div class="tf"><p>${x.acao}</p><s>${x.responsavel||''}${x.prazo?' · '+x.prazo:''}</s></div></div>`).join('')}
+    </div>`:''}
+    ${r.como_impacta_realtec?`<div class="mini"><b>Como isso impacta a Realtec</b>
+      <p>${r.como_impacta_realtec}</p></div>`:''}
+    ${(r.fontes||[]).length?`<div class="tags">${r.fontes.map(f=>`<span class="tag">${f.titulo||f}</span>`).join('')}</div>`:''}
+    ${c.faixa?`<div class="conf-x"><div class="fx">
+      <b class="f-${String(c.faixa).toLowerCase()}">${({MUITO_ALTO:'Muito Alto',ALTO:'Alto',MODERADO:'Moderado',BAIXO:'Baixo'})[c.faixa]||c.faixa}</b>
+      <s>${String(c.valor??'').replace('.',',')}</s></div>
+      <p>Calculado a partir das citações validadas, da qualidade da recuperação e da existência de divergência — não é nota declarada pelo modelo.</p></div>`:''}
+  </div>`;
+}
+
+function iaPergunta(k){
+  const P={gestante:'Posso demitir uma gestante em contrato de experiência?',
+    nr1:'O que mudou na NR-1?', nr35:'O que preciso fazer sobre a NR-35?',
+    esocial:'O que mudou no eSocial?', cbs:'O que mudou na reforma tributária?',
+    abst:'Qual o prazo de validade de um crachá funcional?'};
+  conversa.push({u:P[k]||window._pl||'Consulta'});
+  conversa.push({p:1});
+  if(!iaAberta) abrirIa(); else iaRender();
+  setTimeout(()=>{conversa.pop();conversa.push({k});iaRender();},800);
+}
+
+/* ── Ligação com a Edge Function `claude` ──────────────────────────
+   A chave da Anthropic NUNCA aparece aqui. O navegador chama a Edge
+   Function, autenticado com o JWT do usuário; a chave vive no servidor.
+   Sem sessão ativa, cai na demonstração local — por desenho.          */
+const API = {
+  url: 'https://bwmvmynxqxfvazzqhazt.supabase.co/functions/v1/claude',
+  anon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bXZteW54cXhmdmF6enFoYXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0Mzc4OTEsImV4cCI6MjEwMTAxMzg5MX0.EVPj_z__hB2hCZWMeCYlQJ-rJz0OMaVA_BAzf_9d9jo',
+  token(){ try{ return sessionStorage.getItem('cil_tk'); }catch(e){ return null; } }
+};
+
+async function perguntarAoClaude(pergunta){
+  const tk = API.token();
+  if(!tk) return null;                       // sem sessão → demonstração
+  const r = await fetch(API.url, {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+tk,'apikey':API.anon,'Content-Type':'application/json'},
+    body: JSON.stringify({pergunta})
+  });
+  if(!r.ok) throw new Error('função claude: '+r.status);
+  return r.json();
+}
+
+function iaEnviar(){
+  const el=document.getElementById('iaInput');
+  const t=el.value.trim(); if(!t) return;
+  el.value=''; window._pl=t;
+  conversa.push({u:t}); conversa.push({p:1}); iaRender();
+
+  perguntarAoClaude(t)
+    .then(res=>{
+      conversa.pop();
+      if(res) conversa.push({api:res});
+      else    conversa.push({k:classificar(t)});
+      iaRender();
+    })
+    .catch(()=>{ conversa.pop(); conversa.push({k:classificar(t)}); iaRender(); });
+}
+
+function classificar(t){
+  const n=t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(/gestante|gravida|experiencia|estabilidade/.test(n))return 'gestante';
+  if(/nr.?0?1\b|psicossocial|pgr|gro/.test(n))return 'nr1';
+  if(/nr.?35|altura/.test(n))return 'nr35';
+  if(/esocial|leiaute|evento/.test(n))return 'esocial';
+  if(/tribut|cbs|ibs|reforma/.test(n))return 'cbs';
+  return 'abst';
+}
+
+/* IA age naturalmente: fala uma vez, sem bloquear, e se cala se ignorada */
+function iaProativa(){
+  const p=pend()[0]; if(!p||iaAberta) return;
+  const f=document.getElementById('iaFala');
+  f.innerHTML=`<p>Encontrei <b>${pend().length} ${pend().length===1?'alteração':'alterações'}</b>
+    aguardando sua análise. A mais urgente é ${p.norma}.</p>
+    <div class="aq"><button class="s" onclick="fecharFala();ir('det:${p.id}')">Ver agora</button>
+    <button class="n" onclick="fecharFala()">Depois</button></div>`;
+  f.classList.add('on');
+  setTimeout(()=>{ if(f.classList.contains('on')) f.classList.remove('on'); }, 14000);
+}
+function fecharFala(){ document.getElementById('iaFala').classList.remove('on'); }
+
+/* ═══════════════ PALETA ═══════════════ */
+let mk=0, vis=[];
+const nm=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[-\s]+/g,' ').trim();
+function pont(it,q){
+  if(!q)return 1;
+  const a=nm(it.t+' '+it.s+' '+it.k), c=a.replace(/\s/g,'');
+  const n=nm(q), nc=n.replace(/\s/g,''); if(!nc)return 1;
+  let p=0;
+  if(nm(it.t).startsWith(n))p+=100;
+  if(a.includes(n))p+=60;
+  if(c.includes(nc))p+=40;
+  n.split(' ').filter(Boolean).forEach(w=>{if(a.includes(w))p+=12;});
+  return p;
+}
+function plListar(q){
+  const r=INDICE.map(x=>({...x,p:pont(x,q)})).filter(x=>x.p>0).sort((a,b)=>b.p-a.p).slice(0,20);
+  vis=r; mk=0;
+  const el=document.getElementById('plB');
+  if(!r.length){el.innerHTML='<div class="vazio"><b>Nada encontrado</b><p>Nenhum item corresponde a este termo.</p></div>';return;}
+  const g={}; r.forEach((x,i)=>{(g[x.g]=g[x.g]||[]).push({...x,ix:i})});
+  el.innerHTML=Object.entries(g).map(([k,its])=>`<div class="pl-g">${k}</div>
+    ${its.map(x=>`<button class="pl-i" data-i="${x.ix}" onmousemove="plMk(${x.ix})" onclick="plAbrir()">
+      <span class="pl-ic"><svg class="ic ic-p"><use href="#${x.i}"/></svg></span>
+      <span class="pl-t"><b>${x.t}</b><s>${x.s}</s></span></button>`).join('')}`).join('');
+  plPintar();
+}
+function plPintar(){document.querySelectorAll('.pl-i').forEach(e=>{
+  const on=Number(e.dataset.i)===mk; e.classList.toggle('mk',on);
+  if(on)e.scrollIntoView({block:'nearest'});});}
+function plMk(i){if(i!==mk){mk=i;plPintar();}}
+function plAbrir(){const it=vis[mk]; fecharPl(); if(it&&it.d)ir(it.d);}
+function abrirPl(){
+  document.getElementById('plVeu').classList.add('on');
+  const i=document.getElementById('plIn'); i.value=''; plListar('');
+  setTimeout(()=>i.focus(),40);
+  document.getElementById('lat').classList.remove('on');
+}
+function fecharPl(){document.getElementById('plVeu').classList.remove('on');}
+
+/* ═══════════════ UTIL ═══════════════ */
+function tema(){
+  const r=document.documentElement, n=r.dataset.tema==='claro'?'escuro':'claro';
+  r.dataset.tema=n;
+  document.getElementById('icT').setAttribute('href',n==='claro'?'#k-lua':'#k-sol');
+  document.querySelector('meta[name=theme-color]').setAttribute('content',n==='claro'?'#FFFFFF':'#0A0E15');
+}
+function menu(){document.getElementById('lat').classList.toggle('on');}
+
+document.getElementById('plIn').addEventListener('input',e=>plListar(e.target.value));
+document.addEventListener('keydown',e=>{
+  const ab=document.getElementById('plVeu').classList.contains('on');
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();ab?fecharPl():abrirPl();return;}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='j'){e.preventDefault();iaAberta?fecharIa():abrirIa();return;}
+  if(e.key==='Escape'){fecharPl();fecharIa();return;}
+  if(!ab)return;
+  if(e.key==='ArrowDown'){e.preventDefault();mk=Math.min(mk+1,vis.length-1);plPintar();}
+  if(e.key==='ArrowUp'){e.preventDefault();mk=Math.max(mk-1,0);plPintar();}
+  if(e.key==='Enter'){e.preventDefault();plAbrir();}
+});
+
+render();
+carregarSessao().then(verificarColeta);
+setTimeout(iaProativa, 2600);
+</script>
+</body>
+</html>
