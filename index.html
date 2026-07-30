@@ -1033,6 +1033,37 @@ function sair(){ SB.sair(); USUARIO.nome=USUARIO.cargo=USUARIO.area=null;
   USUARIO.autenticado=false; CTX=null; ir('inicio'); }
 
 
+
+/* ═══════════════════════════════════════════════════════════════
+   ORIGEM DOS DADOS
+   Enquanto o coletor não estiver publicado e agendado, o que se vê
+   na tela é exemplo escrito à mão. O sistema diz isso na cara —
+   um sistema de conformidade que parece atualizado sem estar é
+   pior do que não ter sistema.
+   ═══════════════════════════════════════════════════════════════ */
+let COLETA_ATIVA = false;   // vira true quando houver coleta real no banco
+
+async function verificarColeta(){
+  if(!SB.tk()) return;
+  try{
+    const r = await fetch(`${SB.url}/rest/v1/coleta?status=eq.sucesso&select=iniciada_em&order=iniciada_em.desc&limit=1`,
+      {headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.tk()}});
+    const d = await r.json();
+    COLETA_ATIVA = Array.isArray(d) && d.length > 0;
+    render();
+  }catch(e){ /* sem sessão ou sem permissão: segue como demonstração */ }
+}
+
+function avisoOrigem(){
+  if(COLETA_ATIVA) return '';
+  return `<div class="aviso-origem">
+    <svg class="ic i"><use href="#k-alerta"/></svg>
+    <span class="t"><b>Conteúdo de exemplo.</b> A coleta automática ainda não foi ligada —
+      nada aqui veio do Diário Oficial. Confira sempre na fonte oficial.</span>
+    <button class="l" onclick="ir('config')">Como ligar</button>
+  </div>`;
+}
+
 /* ═══════════════ ESTADO ═══════════════ */
 let rota='inicio', alvo=null, filtro='todos', conversa=[], arquivados=new Set(), iaAberta=false;
 
@@ -1123,6 +1154,7 @@ function vInicio(){
   const total=pend().length;
 
   return `
+  ${avisoOrigem()}
   <div class="cab">
     <h1>${pn ? `${c}, ${pn}` : c}</h1>
     <p>${total?`${total} ${total===1?'alteração precisa':'alterações precisam'} de análise hoje.`:'Nenhuma alteração pendente de análise.'}</p>
@@ -1182,6 +1214,7 @@ function cartao(m){
       <div class="ct-meta">
         <span class="et ${et[0]}"><span class="pt"></span>${et[1]}</span>
         ${!m.analisado?'<span class="et va">aguardando análise</span>':''}
+        ${COLETA_ATIVA?'':'<span class="et va">exemplo</span>'}
         <span>${m.orgao}</span><span class="sep"></span>
         <span class="num">${m.data}</span><span class="sep"></span>
         <span>${m.leitura}</span>
@@ -1234,7 +1267,7 @@ function painelConf(){
 
 /* ─── ALERTAS ─── */
 function vAlertas(){
-  return `<div class="cab"><h1>Alertas</h1>
+  return `${avisoOrigem()}<div class="cab"><h1>Alertas</h1>
     <p>${rel().length} alterações com impacto identificado · ${pend().length} aguardam análise.</p></div>
   <section class="sec"><div class="sec-h"><h2>Com impacto</h2><span class="c">${rel().length}</span></div>
     ${rel().map(cartao).join('')}</section>
@@ -1715,7 +1748,7 @@ document.addEventListener('keydown',e=>{
 });
 
 render();
-carregarSessao();
+carregarSessao().then(verificarColeta);
 setTimeout(iaProativa, 2600);
 </script>
 </body>
