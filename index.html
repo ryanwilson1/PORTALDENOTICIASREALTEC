@@ -652,7 +652,7 @@ html[data-tema="escuro"] .ia-env{background:var(--az);color:#0A0E15}
 <aside class="ia-pn" id="iaPn" aria-label="Realtec IA">
   <div class="ia-h">
     <span class="ia-av"><svg class="ic"><use href="#k-ia"/></svg></span>
-    <span style="flex:1;min-width:0"><b>Realtec IA</b><s id="iaStatus">Acervo sincronizado às 07:42</s></span>
+    <span style="flex:1;min-width:0"><b>Realtec IA</b><s id="iaStatus">Verificando o estado da coleta&hellip;</s></span>
     <button class="bt-i" onclick="fecharIa()" aria-label="Fechar"><svg class="ic ic-p"><use href="#k-x"/></svg></button>
   </div>
   <div class="ia-corpo" id="iaCorpo"></div>
@@ -684,6 +684,38 @@ html[data-tema="escuro"] .ia-env{background:var(--az);color:#0A0E15}
    da empresa, não de uma pessoa. Com login, cada responsável vê o próprio
    nome e o impacto da própria área em destaque.                         */
 const USUARIO = {nome:null, cargo:null, area:null, autenticado:false};
+
+/* ═══════════════════════════════════════════════════════════════
+   C1 · RENDERIZAÇÃO SEGURA
+   Todo o sistema monta tela com template string + innerHTML. É rápido e
+   legível, mas transforma qualquer texto vindo de fora — pergunta digitada
+   na IA, CNAE cadastrado na tela, resposta da Edge Function alimentada por
+   documento coletado — em HTML executável no navegador de quem decide.
+   Num sistema que ingere conteúdo público de terceiros, esse caminho é
+   entrada de código, não detalhe de estilo. esc() é obrigatório em toda
+   interpolação de dado que não seja literal escrito neste arquivo.
+   ═══════════════════════════════════════════════════════════════ */
+const _ESC = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'};
+function esc(v){
+  if(v === null || v === undefined) return '';
+  return String(v).replace(/[&<>"'`]/g, c => _ESC[c]);
+}
+/* Para valores que entram em atributo (data-*, class): além de escapar,
+   remove o que não seja seguro num identificador. */
+function escId(v){ return String(v ?? '').replace(/[^\w.\/-]/g, ''); }
+
+/* ═══════════════════════════════════════════════════════════════
+   C2 · ARMAZENAMENTO LOCAL
+   Definido aqui, antes do primeiro uso. Antes ficava no meio do arquivo,
+   o que impedia hidratar estado (itens arquivados) na partida.
+   Padrão defensivo: se o navegador bloquear storage, cai para memória.
+   ═══════════════════════════════════════════════════════════════ */
+const MEM = {};
+const STORE = {
+  ler(k, pd){ try{ const v=localStorage.getItem('cil_'+k); return v?JSON.parse(v):(MEM[k]??pd); }
+              catch(e){ return MEM[k]??pd; } },
+  gravar(k, v){ MEM[k]=v; try{ localStorage.setItem('cil_'+k, JSON.stringify(v)); }catch(e){} return v; }
+};
 
 function primeiroNome(){ return USUARIO.nome ? USUARIO.nome.trim().split(/\s+/)[0] : null; }
 function iniciais(){
@@ -923,7 +955,37 @@ const INDICE = [
  {g:'Ir para',t:'Comparador',s:'Diferença entre versões',i:'k-diff',k:'comparar diff versao',d:'comparador'},
  {g:'Ir para',t:'Linha do tempo',s:'Cronologia das alterações',i:'k-tempo',k:'linha tempo cronologia historico',d:'timeline'},
  {g:'Ir para',t:'Logs e auditoria',s:'Trilha verificável',i:'k-log',k:'log auditoria trilha',d:'logs'},
- {g:'Ir para',t:'Configurações',s:'Perfil, fontes e acesso',i:'k-eng',k:'config perfil fonte acesso',d:'config'}
+ {g:'Ir para',t:'Configurações',s:'Perfil, fontes e acesso',i:'k-eng',k:'config perfil fonte acesso',d:'config'},
+
+ /* ── expansão: módulos novos no ⌘K ── */
+ {g:'Ir para',t:'Painel executivo',s:'Indicadores do dia, semana e mês',i:'k-escudo',
+  k:'painel executivo dashboard indicador kpi diretoria numero',d:'painel'},
+ {g:'Ir para',t:'Relatório executivo',s:'Resumo do dia para a diretoria',i:'k-livro',
+  k:'relatorio executivo diretoria resumo dia imprimir pdf ata',d:'relatorio'},
+ {g:'Ir para',t:'Rotina das 07:00',s:'Ciclo diário de coleta e alerta',i:'k-relogio',
+  k:'rotina 7 07 sete horas coleta automatica agendamento cron diaria',d:'rotina'},
+ {g:'Inteligência',t:'Radar de oportunidades',s:'Licitações, incentivos e editais',i:'k-lupa',
+  k:'radar oportunidade licitacao pncp comprasnet edital incentivo fiscal financiamento bndes obra parada',d:'radar'},
+ {g:'Inteligência',t:'Inteligência de mercado',s:'Indicadores, insumos e concorrência',i:'k-balanca',
+  k:'mercado economia selic ipca inflacao pib dolar euro aco cobre aluminio cimento diesel energia concorrente',d:'mercado'},
+ {g:'Clientes',t:'Carteira de clientes',s:'Impacto por cliente estratégico',i:'k-users',
+  k:'cliente carteira contrato conta estrategico',d:'clientes'},
+ {g:'Clientes',t:'Sabesp',s:'Saneamento · SP · contrato público',i:'k-empresa',k:'sabesp saneamento eta eeab',d:'cliente:sabesp'},
+ {g:'Clientes',t:'AEGEA',s:'Saneamento · concessões',i:'k-empresa',k:'aegea saneamento concessao',d:'cliente:aegea'},
+ {g:'Clientes',t:'Chevron',s:'Óleo e gás · lubrificantes',i:'k-empresa',k:'chevron oleo gas lubrificante',d:'cliente:chevron'},
+ {g:'Clientes',t:'Bridgestone',s:'Indústria · parada programada',i:'k-empresa',k:'bridgestone borracha pneu parada',d:'cliente:bridgestone'},
+ {g:'Clientes',t:'Colgate',s:'Bens de consumo · elétrica',i:'k-empresa',k:'colgate consumo eletrica predial',d:'cliente:colgate'},
+ {g:'Clientes',t:'Reckitt',s:'Higiene e limpeza · industrial',i:'k-empresa',k:'reckitt higiene limpeza quimico',d:'cliente:reckitt'},
+ {g:'Cadastros',t:'CNAEs monitorados',s:'Veredito por atividade econômica',i:'k-empresa',
+  k:'cnae atividade economica enquadramento veredito cadastro',d:'cnae'},
+ {g:'Perguntar à IA',t:'O que mudou hoje?',s:'Resumo calculado do acervo',i:'k-ia',k:'o que mudou hoje novidade dia',d:'ia:hoje'},
+ {g:'Perguntar à IA',t:'Existe alguma urgência?',s:'O que já é exigível agora',i:'k-ia',k:'urgencia urgente critico exigivel agora prazo',d:'ia:urgencia'},
+ {g:'Perguntar à IA',t:'O que afeta nossos clientes?',s:'Alcance por cliente',i:'k-ia',k:'cliente afeta impacto carteira',d:'ia:clientes'},
+ {g:'Perguntar à IA',t:'Existe alteração tributária?',s:'Tributos e obrigações fiscais',i:'k-ia',k:'tributaria tributo fiscal imposto',d:'ia:tributario'},
+ {g:'Perguntar à IA',t:'Existe alteração para Engenharia?',s:'Procedimento, obra e risco',i:'k-ia',k:'engenharia obra procedimento art crea',d:'ia:engenharia'},
+ {g:'Perguntar à IA',t:'O que precisa ser atualizado hoje?',s:'Ações por ordem de prazo',i:'k-ia',k:'atualizar hoje pgr pcmso ltcat ppp documento pendente',d:'ia:hojefazer'},
+ {g:'Perguntar à IA',t:'Como está o mercado?',s:'Indicadores e pressão de custo',i:'k-ia',k:'mercado economia custo insumo margem',d:'ia:mercado'},
+ {g:'Perguntar à IA',t:'Tem oportunidade nova?',s:'Radar com prazo próximo',i:'k-ia',k:'oportunidade licitacao edital novo',d:'ia:radar'}
 ];
 
 
@@ -933,49 +995,141 @@ const INDICE = [
    vê o próprio nome e a própria área em destaque.
    ═══════════════════════════════════════════════════════════════ */
 const SB = {
-  url:'https://bwmvmynxqxfvazzqhazt.supabase.co',
-  anon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bXZteW54cXhmdmF6enFoYXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0Mzc4OTEsImV4cCI6MjEwMTAxMzg5MX0.EVPj_z__hB2hCZWMeCYlQJ-rJz0OMaVA_BAzf_9d9jo',
-  tk(){ try{ return sessionStorage.getItem('cil_tk'); }catch(e){ return null; } },
-  guardar(t){ try{ sessionStorage.setItem('cil_tk', t); }catch(e){} },
-  sair(){ try{ sessionStorage.removeItem('cil_tk'); }catch(e){} },
+  url:'https://gezmxjurpsiqhhixvvwq.supabase.co',
+  anon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdlem14anVycHNpcWhoaXh2dndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODk1MDAsImV4cCI6MjEwMTY2NTUwMH0.zXywymKlU97SIy2HGb_XxZLnREmfeVu7XWL9z9PInw4',
+  /* ─── C3 · SESSÃO COM RENOVAÇÃO ───────────────────────────────
+     O token do Supabase vale cerca de uma hora. A versão anterior
+     guardava só o access_token e descartava o refresh_token: passada
+     a hora, o sistema derrubava o usuário no meio do expediente sem
+     dizer por quê, e a coleta deixava de ser verificada. Agora a
+     sessão inteira é guardada e renovada antes de expirar.       */
+  _s(){ try{ return JSON.parse(sessionStorage.getItem('cil_sessao') || 'null'); }
+        catch(e){ return null; } },
+  tk(){ const x = this._s(); return x ? x.acesso : null; },
+  rtk(){ const x = this._s(); return x ? x.renova : null; },
+  guardar(d){
+    const x = {acesso: d.access_token, renova: d.refresh_token || null,
+               expira: Date.now() + ((Number(d.expires_in) || 3600) * 1000)};
+    try{ sessionStorage.setItem('cil_sessao', JSON.stringify(x)); }catch(e){}
+    return x;
+  },
+  sair(){ try{ sessionStorage.removeItem('cil_sessao');
+               sessionStorage.removeItem('cil_tk'); }catch(e){} },
 
   async entrar(email, senha){
-    const r = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
-      method:'POST', headers:{'apikey':this.anon,'Content-Type':'application/json'},
-      body: JSON.stringify({email, password:senha})});
-    if(!r.ok) throw new Error('E-mail ou senha incorretos.');
+    let r;
+    try{
+      r = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
+        method:'POST', headers:{'apikey':this.anon,'Content-Type':'application/json'},
+        body: JSON.stringify({email, password:senha})});
+    }catch(e){ throw Object.assign(new Error('Sem conexão com o servidor. Verifique a rede e tente de novo.'), {rede:true}); }
+    if(r.status === 400 || r.status === 401) throw new Error('E-mail ou senha incorretos.');
+    if(r.status === 429) throw new Error('Muitas tentativas seguidas. Aguarde um minuto e tente de novo.');
+    if(!r.ok) throw Object.assign(new Error('O servidor de acesso não respondeu. Tente de novo em instantes.'), {rede:true});
     const d = await r.json();
-    this.guardar(d.access_token);
+    this.guardar(d);
     return d;
   },
+
+  /* Renova quando falta menos de um minuto para expirar. Retorna
+     'ok' | 'expirada' | 'rede' — quem chama precisa distinguir credencial
+     inválida de servidor fora do ar. Tratar os dois como logout foi um
+     dos defeitos corrigidos. */
+  async renovar(forcar){
+    const x = this._s();
+    if(!x) return 'expirada';
+    if(!forcar && Date.now() < x.expira - 60000) return 'ok';
+    if(!x.renova) return 'expirada';
+    let r;
+    try{
+      r = await fetch(`${this.url}/auth/v1/token?grant_type=refresh_token`, {
+        method:'POST', headers:{'apikey':this.anon,'Content-Type':'application/json'},
+        body: JSON.stringify({refresh_token: x.renova})});
+    }catch(e){ return 'rede'; }
+    if(r.status === 400 || r.status === 401){ this.sair(); return 'expirada'; }
+    if(!r.ok) return 'rede';
+    const d = await r.json();
+    if(!d || !d.access_token){ this.sair(); return 'expirada'; }
+    this.guardar(d);
+    return 'ok';
+  },
+
+  /* Wrapper único de chamada autenticada. Renova antes, tenta uma vez,
+     e em 401 renova à força e repete — uma vez só, sem laço. */
+  async chamar(caminho, opcoes = {}, _repetiu){
+    const est = await this.renovar();
+    if(est === 'expirada') throw Object.assign(new Error('sessão expirada'), {autenticacao:true});
+    if(est === 'rede' && !this.tk()) throw Object.assign(new Error('sem conexão'), {rede:true});
+    const t = this.tk();
+    if(!t) throw Object.assign(new Error('sem sessão'), {autenticacao:true});
+    let r;
+    try{
+      r = await fetch(`${this.url}${caminho}`, Object.assign({}, opcoes, {
+        headers: Object.assign({'apikey': this.anon, 'Authorization': 'Bearer ' + t}, opcoes.headers || {})
+      }));
+    }catch(e){ throw Object.assign(new Error('sem conexão'), {rede:true}); }
+    if(r.status === 401 && !_repetiu){
+      const nv = await this.renovar(true);
+      if(nv === 'ok') return this.chamar(caminho, opcoes, true);
+      throw Object.assign(new Error('sessão expirada'), {autenticacao:true});
+    }
+    if(r.status === 401 || r.status === 403)
+      throw Object.assign(new Error('sem permissão'), {autenticacao: r.status === 401, permissao: r.status === 403});
+    if(!r.ok) throw Object.assign(new Error('servidor: ' + r.status), {servidor:true, status:r.status});
+    return r;
+  },
+
   async rpc(fn, args={}){
-    const t = this.tk(); if(!t) throw new Error('sem sessão');
-    const r = await fetch(`${this.url}/rest/v1/rpc/${fn}`, {
-      method:'POST',
-      headers:{'apikey':this.anon,'Authorization':'Bearer '+t,'Content-Type':'application/json'},
+    const r = await this.chamar(`/rest/v1/rpc/${encodeURIComponent(fn)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(args)});
-    if(!r.ok) throw new Error(`rpc ${fn}: ${r.status}`);
     return r.json();
   }
 };
 
 let CTX = null;
 
+/* C4 · Falha de rede não é sessão inválida.
+   A versão anterior fazia SB.sair() em qualquer erro: uma oscilação de
+   conexão deslogava o usuário e o sistema voltava ao modo empresa sem
+   avisar. Agora só credencial recusada encerra a sessão; problema de
+   rede mantém o login e registra o estado degradado. */
+let SESSAO_DEGRADADA = false;
+
+/* C23 · Motivo real da recusa de contexto.
+   contexto_ia() distingue "sem cadastro interno" de "sessão inválida",
+   mas a tela de login descartava isso e mostrava sempre a mesma frase
+   sobre vínculo com empresa. Quem cai nesse caso precisa saber o que
+   pedir ao administrador. */
+let MOTIVO_CONTEXTO = null;
+
 async function carregarSessao(){
   if(!SB.tk()) return;
+  MOTIVO_CONTEXTO = null;
   try{
     const r = await SB.rpc('contexto_ia');
     const c = Array.isArray(r) ? r[0] : r;
-    if(!c || c.erro) throw new Error(c && c.erro || 'sem contexto');
+    if(!c || c.erro) throw Object.assign(new Error(c && c.erro || 'sem contexto'), {autenticacao:true});
+    if(!c.usuario) throw Object.assign(new Error('contexto sem usuário'), {autenticacao:true});
     CTX = c;
-    USUARIO.nome = c.usuario.nome;
-    USUARIO.cargo = c.usuario.cargo || c.usuario.perfil;
-    USUARIO.area = c.usuario.departamento;
+    USUARIO.nome = c.usuario.nome || null;
+    USUARIO.cargo = c.usuario.cargo || c.usuario.perfil || null;
+    USUARIO.area = c.usuario.departamento || null;
     USUARIO.autenticado = true;
+    SESSAO_DEGRADADA = false;
     render();
   }catch(e){
-    SB.sair();
-    console.info('[CIL] sessão expirada ou inválida — modo empresa.');
+    if(e && (e.rede || e.servidor)){
+      SESSAO_DEGRADADA = true;
+      console.warn('[CIL] servidor indisponível — sessão preservada, dados do servidor indisponíveis.');
+    }else{
+      MOTIVO_CONTEXTO = (e && e.message) || null;
+      SB.sair();
+      CTX = null; USUARIO.autenticado = false;
+      USUARIO.nome = USUARIO.cargo = USUARIO.area = null;
+      console.info('[CIL] contexto recusado — modo empresa:', MOTIVO_CONTEXTO);
+    }
+    render();
   }
 }
 
@@ -1022,7 +1176,7 @@ async function fazerLogin(){
     await SB.entrar(e,p);
     await carregarSessao();
     if(USUARIO.autenticado) ir('inicio');
-    else throw new Error('Seu login existe, mas ainda não está vinculado a uma empresa. Fale com o administrador.');
+    else throw new Error(MOTIVO_CONTEXTO || 'Seu login existe, mas ainda não está vinculado a uma empresa. Fale com o administrador.');
   }catch(x){
     erro.textContent=x.message; erro.style.display='block';
     bt.textContent='Entrar';
@@ -1041,21 +1195,56 @@ function sair(){ SB.sair(); USUARIO.nome=USUARIO.cargo=USUARIO.area=null;
    um sistema de conformidade que parece atualizado sem estar é
    pior do que não ter sistema.
    ═══════════════════════════════════════════════════════════════ */
-let COLETA_ATIVA = false;   // vira true quando houver coleta real no banco
+/* C5 · Três estados, não dois.
+   'inativa' e 'indeterminada' pareciam a mesma coisa na tela: a versão
+   anterior engolia qualquer erro e concluía "não há coleta". Num sistema
+   de conformidade, "não consegui verificar" e "verifiquei, não há" são
+   informações diferentes — e a segunda é uma afirmação que o sistema não
+   tinha como sustentar. Agora ele diz qual das três está valendo. */
+let ESTADO_COLETA = 'indeterminada';   // 'ativa' | 'inativa' | 'indeterminada'
+let COLETA_ERRO = null;
 
+Object.defineProperty(window, 'COLETA_ATIVA', {get: () => ESTADO_COLETA === 'ativa'});
+
+/* C21 · Lista vazia não é resposta.
+   A versão anterior lia /rest/v1/coleta direto e concluía
+   `d.length > 0 ? 'ativa' : 'inativa'`. O problema: RLS negando leitura
+   não devolve erro — o PostgREST responde 200 com []. Então "a coleta
+   nunca rodou" e "eu não tenho permissão para saber" chegavam aqui
+   iguais, e a tela escolhia a primeira, que é uma afirmação que este
+   código não tem como sustentar. Medido no banco: 1 linha real em
+   `coleta`, 0 visíveis para authenticated, sem erro nenhum.
+
+   estado_coleta() é SECURITY DEFINER: ou responde de verdade, ou nega
+   com 403 — que é erro classificável, e vira 'indeterminada'. */
 async function verificarColeta(){
-  if(!SB.tk()) return;
+  if(!SB.tk()){ ESTADO_COLETA = 'indeterminada'; COLETA_ERRO = 'sem sessão'; return; }
   try{
-    const r = await fetch(`${SB.url}/rest/v1/coleta?status=eq.sucesso&select=iniciada_em&order=iniciada_em.desc&limit=1`,
-      {headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.tk()}});
-    const d = await r.json();
-    COLETA_ATIVA = Array.isArray(d) && d.length > 0;
-    render();
-  }catch(e){ /* sem sessão ou sem permissão: segue como demonstração */ }
+    const r = await SB.rpc('estado_coleta');
+    const d = Array.isArray(r) ? r[0] : r;
+    if(!d || typeof d.ativa !== 'boolean') throw new Error('resposta inesperada de estado_coleta()');
+    ESTADO_COLETA = d.ativa ? 'ativa' : 'inativa';
+    COLETA_ERRO = null;
+  }catch(e){
+    ESTADO_COLETA = 'indeterminada';
+    COLETA_ERRO = e && e.status === 404 ? 'a função estado_coleta() ainda não existe no banco'
+                : e && e.permissao ? 'sem permissão para consultar o estado da coleta'
+                : e && e.autenticacao ? 'sessão não autorizada'
+                : e && e.rede ? 'servidor inacessível'
+                : (e && e.message) || 'erro desconhecido';
+    console.warn('[CIL] estado da coleta indeterminado:', COLETA_ERRO);
+  }
+  render();
 }
 
 function avisoOrigem(){
-  if(COLETA_ATIVA) return '';
+  if(ESTADO_COLETA === 'ativa') return '';
+  if(ESTADO_COLETA === 'indeterminada') return `<div class="aviso-origem">
+    <svg class="ic i"><use href="#k-alerta"/></svg>
+    <span class="t"><b>Não foi possível confirmar a coleta.</b> ${esc(COLETA_ERRO)} —
+      trate o conteúdo desta tela como exemplo até o log da rotina confirmar o contrário.</span>
+    <button class="l" onclick="ir('rotina')">Ver log</button>
+  </div>`;
   return `<div class="aviso-origem">
     <svg class="ic i"><use href="#k-alerta"/></svg>
     <span class="t"><b>Conteúdo de exemplo.</b> A coleta automática ainda não foi ligada —
@@ -1065,18 +1254,33 @@ function avisoOrigem(){
 }
 
 /* ═══════════════ ESTADO ═══════════════ */
-let rota='inicio', alvo=null, filtro='todos', conversa=[], arquivados=new Set(), iaAberta=false;
+/* C11 · Arquivar era decisão que evaporava no F5.
+   Num radar de conformidade, "já avaliei isto e descartei" é registro,
+   não preferência de tela: sem persistir, o mesmo item volta como
+   pendência e o operador reavalia o que já tinha avaliado.
+   Persistência local por enquanto — quando a tabela de auditoria estiver
+   disponível, isto passa a ser gravado no servidor com autor e data. */
+let rota='inicio', alvo=null, filtro='todos', conversa=[], iaAberta=false;
+let arquivados = new Set(STORE.ler('arquivados', []) || []);
 
 const NAVM=[{d:'inicio',t:'Início',i:'k-casa'},{d:'alertas',t:'Alertas',i:'k-sino',q:1},
  {d:'acoes',t:'Ações',i:'k-lista'},{d:'documentos',t:'Acervo',i:'k-doc'},{d:'config',t:'Ajustes',i:'k-eng'}];
 
+/* Os módulos novos entram nos mesmos grupos e com o mesmo componente da
+   lateral. A barra inferior do celular continua com os 5 itens originais —
+   é um trilho de 5 posições; o resto se alcança pelo menu e pelo ⌘K.      */
 const NAVL=[
  {g:null,i:[{d:'inicio',t:'Início',ic:'k-casa'},{d:'alertas',t:'Alertas',ic:'k-sino',q:1},
-   {d:'acoes',t:'Plano de ação',ic:'k-lista'}]},
+   {d:'acoes',t:'Plano de ação',ic:'k-lista'},{d:'painel',t:'Painel executivo',ic:'k-escudo'}]},
  {g:'Operação',i:[{d:'ignorar',t:'Sem impacto',ic:'k-caixa'},
-   {d:'timeline',t:'Linha do tempo',ic:'k-tempo'}]},
- {g:'Acervo',i:[{d:'documentos',t:'Documentos',ic:'k-doc'},{d:'comparador',t:'Comparador',ic:'k-diff'}]},
- {g:'Sistema',i:[{d:'logs',t:'Logs e auditoria',ic:'k-log'},{d:'config',t:'Configurações',ic:'k-eng'}]}];
+   {d:'timeline',t:'Linha do tempo',ic:'k-tempo'},
+   {d:'clientes',t:'Clientes',ic:'k-users'},{d:'cnae',t:'CNAEs',ic:'k-empresa'}]},
+ {g:'Inteligência',i:[{d:'radar',t:'Radar de oportunidades',ic:'k-lupa'},
+   {d:'mercado',t:'Inteligência de mercado',ic:'k-balanca'}]},
+ {g:'Acervo',i:[{d:'documentos',t:'Documentos',ic:'k-doc'},{d:'comparador',t:'Comparador',ic:'k-diff'},
+   {d:'relatorio',t:'Relatório executivo',ic:'k-livro'}]},
+ {g:'Sistema',i:[{d:'rotina',t:'Rotina 07:00',ic:'k-relogio'},
+   {d:'logs',t:'Logs e auditoria',ic:'k-log'},{d:'config',t:'Configurações',ic:'k-eng'}]}];
 
 const rel=()=>MUDANCAS.filter(m=>m.temImpacto&&!arquivados.has(m.id));
 const pend=()=>rel().filter(m=>!m.analisado);
@@ -1095,6 +1299,7 @@ function risco(){
 /* ═══════════════ RENDER ═══════════════ */
 function ir(d,a){
   if(d.startsWith('det:')){rota='det';alvo=d.slice(4);}
+  else if(d.startsWith('cliente:')){rota='cliente';alvo=d.slice(8);}
   else if(d.startsWith('ia:')){abrirIa();iaPergunta(d.slice(3));return;}
   else {rota=d;alvo=a||null;}
   fecharPl(); document.getElementById('lat').classList.remove('on');
@@ -1115,8 +1320,40 @@ function render(){
   }
   const V={inicio:vInicio,alertas:vAlertas,det:vDet,acoes:vAcoes,
     ignorar:vIgnorar,documentos:vDocs,comparador:vComp,timeline:vTime,logs:vLogs,
-    config:vConfig,entrar:vEntrar};
-  document.getElementById('pag').innerHTML=(V[rota]||vInicio)();
+    config:vConfig,entrar:vEntrar,
+    /* módulos da expansão */
+    painel:vPainel, clientes:vClientes, cliente:vCliente, cnae:vCnae,
+    radar:vRadar, mercado:vMercado, rotina:vRotina, relatorio:vRelatorio};
+  /* C12 · Uma tela inteira montada em uma única atribuição de innerHTML
+     significa que um campo defeituoso apaga a página toda e o usuário fica
+     com o quadro branco, sem saber se o sistema caiu ou se não há nada.
+     Agora a falha é contida e nomeada. */
+  try{
+    document.getElementById('pag').innerHTML=(V[rota]||vInicio)();
+  }catch(e){
+    console.error('[CIL] falha ao montar a tela', rota, e);
+    document.getElementById('pag').innerHTML = `<div class="cab"><h1>Esta tela não pôde ser montada</h1>
+      <p>O erro ficou nesta seção e não afeta o restante do sistema. Detalhe técnico:
+         <span class="num">${esc((e && e.message) || 'erro desconhecido')}</span></p></div>
+      <div class="bts"><button class="bt pr" onclick="ir('inicio')">Voltar ao início</button></div>`;
+  }
+
+  /* O cabeçalho da IA trazia um horário de sincronização fixo no HTML.
+     Horário fixo é horário inventado: agora reflete o estado real.
+     A guarda anterior testava `typeof confianca==='function'` — declaração
+     de função, sempre verdadeira por içamento — enquanto o valor lido era
+     ROTINA, uma const que só existe bem mais abaixo. A guarda não protegia
+     nada; try/catch protege. */
+  const st=document.getElementById('iaStatus');
+  if(st){
+    try{
+      const u=ROTINA.estado.ultima ? new Date(ROTINA.estado.ultima) : null;
+      st.textContent = ESTADO_COLETA === 'indeterminada' ? 'Estado da coleta desconhecido'
+        : ESTADO_COLETA !== 'ativa' ? 'Sem coleta ativa · acervo de exemplo'
+        : u ? `Acervo sincronizado às ${u.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`
+            : 'Aguardando a primeira rotina';
+    }catch(e){ st.textContent = 'Estado da coleta desconhecido'; }
+  }
 }
 
 function faixaRisco(){
@@ -1149,8 +1386,11 @@ function navM(){
 /* ─── INÍCIO: informação primeiro ─── */
 function vInicio(){
   const c=saudacaoHora(), pn=primeiroNome();
-  const lista=filtro==='todos'?rel():filtro==='crit'?crit():filtro==='pend'?pend():
-    rel().filter(m=>m.areas.some(a=>a.toLowerCase().includes(USUARIO.area.slice(0,3).toLowerCase())));
+  /* correção: 'area' só é filtro válido com sessão. Sem essa guarda, quem
+     filtrava pela própria área e depois saía da conta derrubava a tela.   */
+  if(filtro==='area' && !USUARIO.area) filtro='todos';
+  const daArea=()=>rel().filter(m=>m.areas.some(a=>a.toLowerCase().includes(USUARIO.area.slice(0,3).toLowerCase())));
+  const lista=filtro==='todos'?rel():filtro==='crit'?crit():filtro==='pend'?pend():daArea();
   const total=pend().length;
 
   return `
@@ -1176,8 +1416,7 @@ function vInicio(){
       .concat(USUARIO.area?[['area','Minha área','']]:[])
       .map(([k,t,p])=>`<button class="at ${filtro===k?'on':''}" onclick="setFiltro('${k}')">
         ${p?`<span class="pt ${p}"></span>`:''}${t}
-        <b>${k==='todos'?rel().length:k==='crit'?crit().length:k==='pend'?pend().length:
-          rel().filter(m=>m.areas.some(a=>a.toLowerCase().includes(USUARIO.area.slice(0,3).toLowerCase()))).length}</b>
+        <b>${k==='todos'?rel().length:k==='crit'?crit().length:k==='pend'?pend().length:daArea().length}</b>
       </button>`).join('')}
   </div>
 
@@ -1311,6 +1550,8 @@ function vDet(){
     +`<div class="bts"><button class="bt sc" onclick="ir('acoes')">
       Abrir plano completo <svg class="ic ic-p"><use href="#k-dir"/></svg></button></div>`)}
 
+  ${blocosExtras(m, B)}
+
   <div class="impacto-emp">
     <div class="h"><svg class="ic"><use href="#k-empresa"/></svg><strong>Como isso impacta a Realtec?</strong></div>
     <p>${s.empresa}</p>
@@ -1351,7 +1592,16 @@ function vIgnorar(){
       <svg class="ic ic-p"><use href="#k-caixa"/></svg>Arquivar</button></div>
   </div></div>`).join(''):semItens('Nada a revisar','Todas as publicações sem impacto já foram arquivadas.')}`;
 }
-function arquivar(id){ arquivados.add(id); render(); }
+function arquivar(id){
+  arquivados.add(id);
+  STORE.gravar('arquivados', [...arquivados]);
+  render();
+}
+function desarquivar(id){
+  arquivados.delete(id);
+  STORE.gravar('arquivados', [...arquivados]);
+  render();
+}
 
 function vDocs(){
   const G={
@@ -1443,16 +1693,34 @@ function vLogs(){
    ['08:11','Segurança do Trabalho','Validou e publicou a análise da NR-1'],
    ['07:58','Sistema','Alerta crítico despachado para SESMT, RH e Jurídico'],
    ['07:42','Sistema','Sincronização concluída · 13 de 13 fontes']];
+  const reais = ROTINA.estado.log || [];
   return `<div class="cab"><h1>Logs e auditoria</h1>
     <p>Trilha somente de inserção, encadeada por hash. Registra quem visualizou, analisou e aprovou.</p></div>
   <div class="ct" style="margin-bottom:14px"><div class="ct-in" style="display:flex;align-items:center;gap:12px">
-    <svg class="ic ic-g" style="color:var(--vd);flex:none"><use href="#k-escudo"/></svg>
-    <div><div style="font-size:13.5px;font-weight:600;color:var(--vd)">Integridade verificada</div>
-      <p style="font-size:12.8px;color:var(--t-2);margin-top:2px">48.213 registros · cadeia íntegra desde a origem</p></div>
+    <svg class="ic ic-g" style="color:var(--${COLETA_ATIVA?'vd':'t-3'});flex:none"><use href="#k-escudo"/></svg>
+    <div><div style="font-size:13.5px;font-weight:600;color:var(--${COLETA_ATIVA?'vd':'t-2'})">
+      ${COLETA_ATIVA?'Integridade verificada':'Trilha local — sem cadeia no servidor'}</div>
+      <p style="font-size:12.8px;color:var(--t-2);margin-top:2px">
+        ${COLETA_ATIVA?'Cadeia íntegra desde a origem'
+          :'Sem coleta ligada, o registro vive só neste navegador e não serve como prova de auditoria.'}</p></div>
   </div></div>
-  <div class="lista">${L.map(([h,u,d])=>`<div class="li">
-    <span class="num" style="font-size:11.5px;color:var(--t-3);flex:none;width:40px">${h}</span>
-    <span class="li-t"><b style="font-weight:400">${d}</b><s>${u}</s></span></div>`).join('')}</div>`;
+
+  ${reais.length?`<section class="sec"><div class="sec-h"><h2>Execuções registradas</h2>
+    <span class="c">${reais.length}</span></div>
+    <div class="lista">${reais.map(l=>`<div class="li">
+      <span class="num" style="font-size:11.5px;color:var(--t-3);flex:none;width:44px">${l.h}</span>
+      <span class="li-t"><b style="font-weight:400">${l.r}</b>
+        <s>${l.dia} · ${l.modo} · origem: ${l.origem}</s></span></div>`).join('')}</div></section>`:''}
+
+  <section class="sec"><div class="sec-h"><h2>Trilha de atividade</h2>
+    ${COLETA_ATIVA?'':'<span class="c">exemplo</span>'}</div>
+    <div class="lista">${L.map(([h,u,d])=>`<div class="li">
+      <span class="num" style="font-size:11.5px;color:var(--t-3);flex:none;width:40px">${h}</span>
+      <span class="li-t"><b style="font-weight:400">${d}</b><s>${u}</s></span></div>`).join('')}</div>
+    ${COLETA_ATIVA?'':`<p style="font-size:11.5px;color:var(--t-3);margin-top:9px">
+      Estas linhas são ilustrativas — mostram o formato que a trilha terá. Os registros reais
+      aparecem no bloco acima, gerados pela rotina.</p>`}
+  </section>`;
 }
 
 function vConfig(){
@@ -1463,13 +1731,17 @@ function vConfig(){
     <div class="ct"><div class="ct-in">
       <div style="font-size:13px;color:var(--t-2)">Normas monitoradas com prioridade</div>
       <div class="tags">${nrs.map(n=>`<span class="tag">${n}</span>`).join('')}</div></div></div></section>
-  <section class="sec"><div class="sec-h"><h2>Saúde das fontes</h2><span class="c">13 de 13</span></div>
+  <section class="sec"><div class="sec-h"><h2>Saúde das fontes</h2>
+    <span class="c">${COLETA_ATIVA?FONTES.length+' de '+FONTES.length:'0 de '+FONTES.length}</span></div>
     <div class="lista">${FONTES.map(([n,q])=>`<div class="li">
-      <svg class="ic ic-p" style="color:var(--vd);flex:none"><use href="#k-ok"/></svg>
-      <span class="li-t"><b style="font-weight:400">${n}</b></span>
-      <span class="num" style="font-size:11.5px;color:var(--t-3)">${q}</span></div>`).join('')}</div>
+      <svg class="ic ic-p" style="color:var(--${COLETA_ATIVA?'vd':'t-3'});flex:none">
+        <use href="#${COLETA_ATIVA?'k-ok':'k-menos'}"/></svg>
+      <span class="li-t"><b style="font-weight:400;${COLETA_ATIVA?'':'color:var(--t-3)'}">${n}</b></span>
+      <span class="num" style="font-size:11.5px;color:var(--t-3)">${COLETA_ATIVA?q:'não coletada'}</span></div>`).join('')}</div>
     <p style="font-size:11.5px;color:var(--t-3);margin-top:9px">
-      Se uma fonte parar, aparece aqui e no indicador. O sistema nunca finge estar atualizado.</p></section>
+      ${COLETA_ATIVA
+        ? 'Se uma fonte parar, aparece aqui e no indicador. O sistema nunca finge estar atualizado.'
+        : 'Estas são as fontes <b>cadastradas</b>, não fontes lidas. Nenhuma foi consultada — o coletor ainda não está publicado. Enquanto isso, o horário de sincronização ao lado de cada uma ficaria inventado, então não é exibido.'}</p></section>
   <section class="sec"><div class="sec-h"><h2>Perfis de acesso</h2></div>
     <div class="lista">${[
       ['Administrador','Configura fontes, prompts e integrações'],
@@ -1516,7 +1788,14 @@ function iaRender(){
       <div class="tx" style="color:var(--t-2)">Mostro sempre de onde tirei cada afirmação. Quando não houver fundamento oficial, eu digo — não preencho a lacuna.</div>
     </div>
     <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
-      color:var(--t-3);margin:18px 0 9px">Perguntas frequentes</div>
+      color:var(--t-3);margin:18px 0 9px">Visão do dia</div>
+    ${[['O que mudou hoje?','hoje'],['Existe alguma urgência?','urgencia'],
+       ['O que precisa ser atualizado hoje?','hojefazer'],
+       ['Existe algo que afeta nossos clientes?','clientes']]
+      .map(([q,k])=>`<button class="atalho-ia" onclick="iaPergunta('${k}')">${q}</button>`).join('')}
+
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+      color:var(--t-3);margin:18px 0 9px">Consultas técnicas</div>
     ${[['Posso demitir uma gestante em contrato de experiência?','gestante'],
        ['O que mudou na NR-1?','nr1'],['O que preciso fazer sobre a NR-35?','nr35'],
        ['Qual o prazo de validade de um crachá funcional?','abst']]
@@ -1527,10 +1806,28 @@ function iaRender(){
   c.scrollTop=c.scrollHeight;
 }
 
+/* C16 · Resposta de exemplo precisa se declarar.
+   Quando o servidor não responde, o sistema volta ao acervo escrito à mão.
+   Antes isso acontecia calado e a tela ficava idêntica à de uma resposta
+   apurada. Agora a resposta local vem etiquetada com o motivo. */
+function selo(t){
+  if(!t || !t.local) return '';
+  return `<div class="av-risco am" style="margin-bottom:10px">
+    <svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+    <div><b>Resposta de exemplo</b><p style="color:var(--t-1);margin-top:4px">
+      Não veio do acervo — ${esc(t.local)}. Confira na fonte oficial antes de decidir.</p></div></div>`;
+}
+
 function iaTurno(t){
-  if(t.u) return `<div class="msg-u">${t.u}</div>`;
+  if(t.u) return `<div class="msg-u">${esc(t.u)}</div>`;
   if(t.p) return `<div class="msg-a"><div class="pensa"><i></i><i></i><i></i> Consultando o acervo…</div></div>`;
   if(t.api) return iaTurnoAPI(t.api);
+
+  const marca = selo(t);
+  if(marca) return `<div class="msg-a">${marca}</div>` + iaTurno(Object.assign({}, t, {local:null}));
+
+  /* expansão: perguntas corporativas respondidas a partir do estado do sistema */
+  if(t.k && IA_CORP[t.k]) return iaTurnoCorp(t.k);
 
   if(t.k==='abst') return `<div class="msg-a">
     <div class="av-risco am"><svg class="ic ic-g i"><use href="#k-alerta"/></svg>
@@ -1569,12 +1866,18 @@ function iaTurno(t){
 
 /* Renderiza a resposta real vinda da Edge Function, no mesmo formato
    visual das respostas de demonstração.                              */
+/* C8 · A resposta da Edge Function é conteúdo não confiável.
+   Ela nasce de documento público coletado na internet e passa por um
+   modelo de linguagem. Interpolar isso cru em innerHTML fecha o circuito
+   fonte externa → tela do diretor. Todo campo abaixo passa por esc(). */
 function iaTurnoAPI(r){
+  if(!r || typeof r !== 'object') return `<div class="msg-a"><div class="tx">
+    A resposta do servidor veio em formato inesperado e não foi exibida.</div></div>`;
   if(r.abstencao||r.origem==='bloqueada') return `<div class="msg-a">
     <div class="av-risco am"><svg class="ic ic-g i"><use href="#k-alerta"/></svg>
       <div><b>${r.origem==='bloqueada'?'Citação sem lastro':'Sem fundamento suficiente'}</b>
-      <p style="color:var(--t-1);margin-top:4px">${r.texto||''}</p></div></div>
-    ${r.detalhe?`<div class="tx" style="margin-top:11px">${r.detalhe}</div>`:''}</div>`;
+      <p style="color:var(--t-1);margin-top:4px">${esc(r.texto)}</p></div></div>
+    ${r.detalhe?`<div class="tx" style="margin-top:11px">${esc(r.detalhe)}</div>`:''}</div>`;
 
   const c=r.grau_confianca||{};
   const sel={banco_local:'resposta validada',cache:'do cache',claude:'analisado agora'}[r.origem]||'';
@@ -1583,33 +1886,33 @@ function iaTurnoAPI(r){
 
   return `<div class="msg-a">
     <div class="qm"><svg class="ic ic-p"><use href="#k-ia"/></svg>Resposta objetiva
-      ${sel?`<span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0">${sel}</span>`:''}</div>
-    <div class="tx">${r.resposta_objetiva?.texto||''}</div>
-    ${r.explicacao?.texto?`<div class="tx" style="color:var(--t-2);margin-top:9px">${r.explicacao.texto}</div>`:''}
-    ${(r.explicacao?.termos||[]).map(x=>`<div class="mini"><b>${x.termo}</b><p>${x.significado}</p></div>`).join('')}
-    ${r.fundamentacao?.texto_oficial?`<div class="lei"><p>${r.fundamentacao.texto_oficial}</p>
-      <div class="fn"><svg class="ic ic-p"><use href="#k-link"/></svg>${r.fundamentacao.referencia||'fonte oficial'}</div></div>`:''}
+      ${sel?`<span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0">${esc(sel)}</span>`:''}</div>
+    <div class="tx">${esc(r.resposta_objetiva?.texto)}</div>
+    ${r.explicacao?.texto?`<div class="tx" style="color:var(--t-2);margin-top:9px">${esc(r.explicacao.texto)}</div>`:''}
+    ${(Array.isArray(r.explicacao?.termos)?r.explicacao.termos:[]).map(x=>`<div class="mini"><b>${esc(x?.termo)}</b><p>${esc(x?.significado)}</p></div>`).join('')}
+    ${r.fundamentacao?.texto_oficial?`<div class="lei"><p>${esc(r.fundamentacao.texto_oficial)}</p>
+      <div class="fn"><svg class="ic ic-p"><use href="#k-link"/></svg>${esc(r.fundamentacao.referencia||'fonte oficial')}</div></div>`:''}
     ${r.divergencia?`<div class="dvg"><div class="h"><svg class="ic ic-p"><use href="#k-balanca"/></svg>
       <b>Divergência entre tribunais</b></div>
-      ${(r.divergencia.posicoes||[]).map(p=>`<div class="p"><b>${p.tribunal||p.t||''}</b><p>${p.entendimento||p.s||''}</p></div>`).join('')}
-      ${r.divergencia.orientacao?`<div class="o">${r.divergencia.orientacao}</div>`:''}</div>`:''}
+      ${(Array.isArray(r.divergencia.posicoes)?r.divergencia.posicoes:[]).map(p=>`<div class="p"><b>${esc(p?.tribunal||p?.t)}</b><p>${esc(p?.entendimento||p?.s)}</p></div>`).join('')}
+      ${r.divergencia.orientacao?`<div class="o">${esc(r.divergencia.orientacao)}</div>`:''}</div>`:''}
     ${Object.keys(imp).length?`<div class="mini"><b>Impacto por área</b>
       ${Object.entries(imp).map(([a,v])=>v&&v.disponivel!==false
         ? `<p style="margin-top:6px"><b style="color:${a.startsWith(areaU)?'var(--az-f)':'var(--t-1)'};
-           text-transform:none;letter-spacing:0;font-size:12.5px;display:inline">${a}:</b> ${v.texto||''}</p>`
+           text-transform:none;letter-spacing:0;font-size:12.5px;display:inline">${esc(a)}:</b> ${esc(v.texto)}</p>`
         : `<p style="margin-top:6px;color:var(--t-3)"><b style="text-transform:none;letter-spacing:0;
-           font-size:12.5px;display:inline;color:var(--t-3)">${a}:</b> ${v?.motivo||'sem impacto identificado'}</p>`).join('')}
+           font-size:12.5px;display:inline;color:var(--t-3)">${esc(a)}:</b> ${esc(v?.motivo||'sem impacto identificado')}</p>`).join('')}
     </div>`:''}
-    ${(r.checklist||[]).length?`<div style="margin-top:12px">
+    ${(Array.isArray(r.checklist)?r.checklist:[]).length?`<div style="margin-top:12px">
       ${r.checklist.map(x=>`<div class="tarefa"><div class="cx" onclick="tick(this)">
         <svg class="ic ic-p"><use href="#k-tick"/></svg></div>
-        <div class="tf"><p>${x.acao}</p><s>${x.responsavel||''}${x.prazo?' · '+x.prazo:''}</s></div></div>`).join('')}
+        <div class="tf"><p>${esc(x?.acao)}</p><s>${esc(x?.responsavel)}${x?.prazo?' · '+esc(x.prazo):''}</s></div></div>`).join('')}
     </div>`:''}
     ${r.como_impacta_realtec?`<div class="mini"><b>Como isso impacta a Realtec</b>
-      <p>${r.como_impacta_realtec}</p></div>`:''}
-    ${(r.fontes||[]).length?`<div class="tags">${r.fontes.map(f=>`<span class="tag">${f.titulo||f}</span>`).join('')}</div>`:''}
+      <p>${esc(r.como_impacta_realtec)}</p></div>`:''}
+    ${(Array.isArray(r.fontes)?r.fontes:[]).length?`<div class="tags">${r.fontes.map(f=>`<span class="tag">${esc(f?.titulo||f)}</span>`).join('')}</div>`:''}
     ${c.faixa?`<div class="conf-x"><div class="fx">
-      <b class="f-${String(c.faixa).toLowerCase()}">${({MUITO_ALTO:'Muito Alto',ALTO:'Alto',MODERADO:'Moderado',BAIXO:'Baixo'})[c.faixa]||c.faixa}</b>
+      <b class="f-${escId(String(c.faixa).toLowerCase())}">${esc(({MUITO_ALTO:'Muito Alto',ALTO:'Alto',MODERADO:'Moderado',BAIXO:'Baixo'})[c.faixa]||c.faixa)}</b>
       <s>${String(c.valor??'').replace('.',',')}</s></div>
       <p>Calculado a partir das citações validadas, da qualidade da recuperação e da existência de divergência — não é nota declarada pelo modelo.</p></div>`:''}
   </div>`;
@@ -1619,7 +1922,12 @@ function iaPergunta(k){
   const P={gestante:'Posso demitir uma gestante em contrato de experiência?',
     nr1:'O que mudou na NR-1?', nr35:'O que preciso fazer sobre a NR-35?',
     esocial:'O que mudou no eSocial?', cbs:'O que mudou na reforma tributária?',
-    abst:'Qual o prazo de validade de um crachá funcional?'};
+    abst:'Qual o prazo de validade de um crachá funcional?',
+    /* expansão — perguntas de rotina da diretoria */
+    hoje:'O que mudou hoje?', urgencia:'Existe alguma urgência?',
+    clientes:'Existe algo que afeta nossos clientes?', tributario:'Existe alteração tributária?',
+    engenharia:'Existe alteração para Engenharia?', hojefazer:'O que precisa ser atualizado hoje?',
+    mercado:'Como está o mercado?', radar:'Tem oportunidade nova?'};
   conversa.push({u:P[k]||window._pl||'Consulta'});
   conversa.push({p:1});
   if(!iaAberta) abrirIa(); else iaRender();
@@ -1630,22 +1938,27 @@ function iaPergunta(k){
    A chave da Anthropic NUNCA aparece aqui. O navegador chama a Edge
    Function, autenticado com o JWT do usuário; a chave vive no servidor.
    Sem sessão ativa, cai na demonstração local — por desenho.          */
+/* C13 · A chave de sessão passa a ter uma única fonte: SB.
+   API.token() lia sessionStorage direto, com outra chave — depois da
+   correção de renovação, leria um valor que não existe mais e toda
+   pergunta cairia na demonstração local sem avisar ninguém.
+   C14 · Sem tempo limite, uma Edge Function pendurada deixava a IA
+   "consultando o acervo" para sempre. */
 const API = {
-  url: 'https://bwmvmynxqxfvazzqhazt.supabase.co/functions/v1/claude',
-  anon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bXZteW54cXhmdmF6enFoYXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0Mzc4OTEsImV4cCI6MjEwMTAxMzg5MX0.EVPj_z__hB2hCZWMeCYlQJ-rJz0OMaVA_BAzf_9d9jo',
-  token(){ try{ return sessionStorage.getItem('cil_tk'); }catch(e){ return null; } }
+  caminho: '/functions/v1/claude',
+  limiteMs: 45000
 };
 
 async function perguntarAoClaude(pergunta){
-  const tk = API.token();
-  if(!tk) return null;                       // sem sessão → demonstração
-  const r = await fetch(API.url, {
-    method:'POST',
-    headers:{'Authorization':'Bearer '+tk,'apikey':API.anon,'Content-Type':'application/json'},
-    body: JSON.stringify({pergunta})
-  });
-  if(!r.ok) throw new Error('função claude: '+r.status);
-  return r.json();
+  if(!SB.tk()) return null;                  // sem sessão → demonstração
+  const ac = new AbortController();
+  const t = setTimeout(()=>ac.abort(), API.limiteMs);
+  try{
+    const r = await SB.chamar(API.caminho, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pergunta}), signal: ac.signal});
+    return await r.json();
+  }finally{ clearTimeout(t); }
 }
 
 function iaEnviar(){
@@ -1654,23 +1967,47 @@ function iaEnviar(){
   el.value=''; window._pl=t;
   conversa.push({u:t}); conversa.push({p:1}); iaRender();
 
+  /* C15 · Cair na demonstração local em silêncio é o pior desfecho
+     possível aqui: a tela fica idêntica à de uma resposta real e a
+     pessoa não tem como saber que está lendo exemplo. Agora o motivo
+     aparece junto da resposta. */
   perguntarAoClaude(t)
     .then(res=>{
       conversa.pop();
       if(res) conversa.push({api:res});
-      else    conversa.push({k:classificar(t)});
+      else    conversa.push({k:classificar(t), local:'sem sessão ativa'});
       iaRender();
     })
-    .catch(()=>{ conversa.pop(); conversa.push({k:classificar(t)}); iaRender(); });
+    .catch(e=>{
+      conversa.pop();
+      const motivo = e && e.name === 'AbortError' ? 'o servidor demorou demais para responder'
+                   : e && e.autenticacao ? 'a sessão expirou'
+                   : e && e.rede ? 'o servidor está inacessível'
+                   : e && e.servidor ? `o servidor respondeu ${esc(e.status)}`
+                   : 'a consulta ao servidor falhou';
+      conversa.push({k:classificar(t), local:motivo});
+      iaRender();
+    });
 }
 
 function classificar(t){
   const n=t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+  /* expansão — perguntas de gestão vêm antes das de conteúdo: quando alguém
+     pergunta "o que mudou hoje", quer o estado do sistema, não uma norma.   */
+  if(/o que mudou (hoje|nas ultimas|no dia)|novidade|resumo do dia/.test(n)) return 'hoje';
+  if(/urgen|urgente|critic|exigivel|corre risco|estamos irregular/.test(n)) return 'urgencia';
+  if(/cliente|sabesp|aegea|chevron|bridgestone|colgate|reckitt|carteira|contrato com/.test(n)) return 'clientes';
+  if(/oportunidade|licitac|edital|pncp|comprasnet|incentivo|financiamento|bndes/.test(n)) return 'radar';
+  if(/mercado|selic|inflac|ipca|pib|dolar|euro|aco|cobre|aluminio|cimento|diesel|concorren|insumo|margem/.test(n)) return 'mercado';
+  if(/o que (precisa|preciso|devo|tenho que) (ser )?(atualiz|faz|revis)|pendencia|hoje.*fazer/.test(n)) return 'hojefazer';
+  if(/engenharia|obra|canteiro|art\b|crea|projeto/.test(n)) return 'engenharia';
+  if(/tribut|fiscal|imposto|cbs|ibs|reforma|sped|dctf|reinf/.test(n)) return 'tributario';
+
   if(/gestante|gravida|experiencia|estabilidade/.test(n))return 'gestante';
   if(/nr.?0?1\b|psicossocial|pgr|gro/.test(n))return 'nr1';
   if(/nr.?35|altura/.test(n))return 'nr35';
   if(/esocial|leiaute|evento/.test(n))return 'esocial';
-  if(/tribut|cbs|ibs|reforma/.test(n))return 'cbs';
   return 'abst';
 }
 
@@ -1747,9 +2084,1428 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault();plAbrir();}
 });
 
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ▓▓ EXPANSÃO — CENTRO DE INTELIGÊNCIA ESTRATÉGICA ▓▓
+   Tudo daqui para baixo é acréscimo. Nada acima foi alterado em
+   identidade visual, cor, componente ou estrutura de página. Os módulos
+   novos reaproveitam as mesmas classes CSS já existentes (.ct, .sec,
+   .lista, .li, .bl, .lin, .tag, .mini, .et…) — por isso continuam
+   respondendo ao tema claro/escuro e ao layout responsivo sem tocar em
+   uma linha do CSS original.
+
+   Princípio herdado do sistema: nada aqui finge estar atualizado.
+   Enquanto a coleta real não estiver ligada, todo módulo novo carrega o
+   mesmo aviso de origem que o resto do sistema. Um centro de
+   inteligência que parece atualizado sem estar é pior do que não ter.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   PERSISTÊNCIA — cadastros feitos na tela sobrevivem ao reload.
+   Mesmo padrão defensivo do SB.tk(): se o navegador bloquear
+   armazenamento, cai para memória e o sistema segue funcionando.
+   ───────────────────────────────────────────────────────────── */
+/* MEM e STORE agora vivem no topo do arquivo (C2) — precisam existir
+   antes do estado da tela, não depois. */
+
+/* ─────────────────────────────────────────────────────────────
+   PERFIL DA REALTEC — é ele que separa ruído de risco.
+   As etiquetas (tags) são o vocabulário que liga norma → CNAE →
+   cliente → oportunidade. Um item só entra no radar de alguém se
+   compartilhar etiqueta com esse alguém.
+   ───────────────────────────────────────────────────────────── */
+const ETIQUETAS = {
+  obra:'Obra e canteiro', eletrica:'Instalações elétricas', industrial:'Manutenção industrial',
+  altura:'Trabalho em altura', confinado:'Espaço confinado', quimico:'Agentes químicos',
+  mecanica:'Montagem mecânica', pessoal:'Gestão de pessoas', fiscal:'Obrigação fiscal',
+  ambiental:'Meio ambiente', publico:'Contrato público', privado:'Contrato privado'
+};
+
+/* ─────────────────────────────────────────────────────────────
+   CNAE — cadastro ilimitado. Os quatro primeiros vêm do cartão
+   CNPJ da Realtec; o que o usuário cadastrar na tela entra aqui
+   com a mesma estrutura e passa a ser avaliado igual.
+   ───────────────────────────────────────────────────────────── */
+const CNAE_BASE = [
+ {c:'42.21-9/02', d:'Construção de estações e redes de distribuição de energia elétrica',
+  principal:true, tags:['obra','eletrica','altura','publico','privado']},
+ {c:'43.21-5/00', d:'Instalação e manutenção elétrica',
+  principal:false, tags:['eletrica','industrial','altura','privado']},
+ {c:'33.14-7/99', d:'Manutenção e reparação de máquinas e equipamentos industriais',
+  principal:false, tags:['industrial','mecanica','confinado','quimico','privado']},
+ {c:'71.12-0/00', d:'Serviços de engenharia',
+  principal:false, tags:['obra','industrial','publico','privado']},
+ {c:'42.99-5/99', d:'Obras de engenharia civil não especificadas anteriormente',
+  principal:false, tags:['obra','altura','publico']}
+];
+let CNAES = STORE.ler('cnaes', CNAE_BASE);
+
+/* ─────────────────────────────────────────────────────────────
+   CLIENTES ESTRATÉGICOS — cada um com escopo, frentes, exigências
+   contratuais e etiquetas. É pela etiqueta que o sistema responde
+   "esta alteração atinge este cliente?" sem precisar de curadoria
+   manual a cada publicação.
+   ───────────────────────────────────────────────────────────── */
+const CLIENTE_BASE = [
+ {id:'sabesp', nome:'Sabesp', sigla:'SB', setor:'Saneamento', uf:'SP', natureza:'publico',
+  escopo:'Manutenção eletromecânica em estações de tratamento e elevatórias',
+  contratos:3, vigencia:'12/2027', criticidade:'alta',
+  frentes:['ETA Guaraú','EEAB Cotia','Reservatório Alto Tietê'],
+  tags:['obra','eletrica','industrial','confinado','altura','publico'],
+  exigencias:['PGR específico por frente de obra, entregue à fiscalização',
+    'ART de execução por contrato, com baixa ao término',
+    'Permissão de entrada em espaço confinado auditada mensalmente',
+    'Integração de SST para toda equipe própria e terceirizada'],
+  nota:'Contrato público: mudança normativa costuma virar exigência de fiscalização em até 60 dias.'},
+
+ {id:'aegea', nome:'AEGEA', sigla:'AE', setor:'Saneamento', uf:'MS · SP · PA', natureza:'privado',
+  escopo:'Serviços de engenharia e manutenção em concessões de saneamento',
+  contratos:2, vigencia:'06/2028', criticidade:'alta',
+  frentes:['Concessão Ribeirão Preto','Unidade Campo Grande'],
+  tags:['obra','eletrica','industrial','confinado','privado'],
+  exigencias:['Plano de resposta a emergência alinhado ao da concessionária',
+    'Documentação de SST integrada ao portal do contratante',
+    'Qualificação técnica renovada a cada 12 meses'],
+  nota:'Concessionária multiestadual: alteração estadual em um ente pode não valer nos demais.'},
+
+ {id:'chevron', nome:'Chevron', sigla:'CV', setor:'Óleo e gás', uf:'RJ', natureza:'privado',
+  escopo:'Manutenção industrial e montagem mecânica em unidade de lubrificantes',
+  contratos:1, vigencia:'03/2027', criticidade:'alta',
+  frentes:['Unidade Rio de Janeiro'],
+  tags:['industrial','mecanica','quimico','confinado','altura','privado'],
+  exigencias:['Padrão corporativo de segurança acima do exigido em NR',
+    'Análise preliminar de risco por ordem de serviço',
+    'Auditoria de contratada semestral com plano de ação formal'],
+  nota:'Cliente com padrão próprio: a NR é o piso, não o teto. Toda mudança de NR gera revisão de procedimento.'},
+
+ {id:'bridgestone', nome:'Bridgestone', sigla:'BR', setor:'Indústria de borracha', uf:'SP', natureza:'privado',
+  escopo:'Manutenção de utilidades e parada programada',
+  contratos:2, vigencia:'09/2027', criticidade:'media',
+  frentes:['Planta Santo André','Parada anual — julho'],
+  tags:['industrial','mecanica','quimico','altura','privado'],
+  exigencias:['Liberação de trabalho por bloqueio e etiquetagem',
+    'Treinamento específico de planta antes do acesso',
+    'Relatório de parada com evidência fotográfica'],
+  nota:'Parada industrial concentra risco: efetivo triplica em janela curta, com terceiros rotativos.'},
+
+ {id:'colgate', nome:'Colgate', sigla:'CO', setor:'Bens de consumo', uf:'SP', natureza:'privado',
+  escopo:'Manutenção elétrica predial e industrial',
+  contratos:1, vigencia:'01/2027', criticidade:'media',
+  frentes:['Planta São Bernardo'],
+  tags:['eletrica','industrial','pessoal','privado'],
+  exigencias:['Prontuário de instalações elétricas atualizado',
+    'Certificação de equipe conforme NR-10 e reciclagem em dia'],
+  nota:'Escopo predominantemente elétrico: alterações de NR-10 e NR-12 têm efeito direto.'},
+
+ {id:'reckitt', nome:'Reckitt', sigla:'RK', setor:'Higiene e limpeza', uf:'SP', natureza:'privado',
+  escopo:'Manutenção industrial e serviços de engenharia',
+  contratos:1, vigencia:'08/2026', criticidade:'media',
+  frentes:['Planta Vinhedo'],
+  tags:['industrial','quimico','mecanica','privado'],
+  exigencias:['Ficha de segurança de produto químico no ponto de uso',
+    'Controle de contratadas via portal do cliente'],
+  nota:'Vigência encerra em 08/2026 — janela de renegociação aberta. Conformidade pesa na renovação.'}
+];
+let CLIENTES = STORE.ler('clientes', CLIENTE_BASE);
+
+/* ─────────────────────────────────────────────────────────────
+   ENRIQUECIMENTO DAS ALTERAÇÕES
+   O array MUDANCAS original ficou intacto. Os campos exigidos pela
+   análise técnica (classificação, sanção, versões, fonte, alcance)
+   entram por este mapa e são fundidos em tempo de leitura.
+   ───────────────────────────────────────────────────────────── */
+const ENRIQ = {
+ nr1:{classes:['Segurança','Trabalhista','Compliance','RH'], atinge:['*'],
+   responsavel:'SESMT · com validação do Jurídico',
+   multa:'De R$ 670,89 a R$ 6.708,59 por item, dobrada na reincidência (Portaria MTP 667/2021, anexo I)',
+   penalidade:'Autuação por infração ao item 1.5.3.2; embargo ou interdição em caso de risco grave e iminente; agravamento em ação regressiva do INSS',
+   fonte:'in.gov.br · Portaria MTE nº 1.419/2024 e nº 765/2025',
+   vAnterior:'Riscos de natureza física, química, biológica e ergonômica.',
+   vNova:'Acrescidos os fatores de risco psicossociais relacionados ao trabalho.',
+   tipo:'Portaria', esfera:'Federal'},
+
+ consignado:{classes:['Departamento Pessoal','Trabalhista','Fiscal'], atinge:['pessoal','*'],
+   responsavel:'Departamento Pessoal',
+   multa:'Sem multa administrativa específica; a exposição é o passivo do desconto incorreto',
+   penalidade:'Cobrança regressiva da instituição financeira e reclamatória trabalhista por desconto indevido em verba rescisória',
+   fonte:'in.gov.br · Portaria MTE nº 435/2025, art. 30',
+   vAnterior:'Sem obrigação expressa de verificação de consignado ativo no desligamento.',
+   vNova:'Desconto da parcela da competência na rescisão, limitado a 35% da remuneração disponível.',
+   tipo:'Portaria', esfera:'Federal'},
+
+ nr35:{classes:['Segurança','Engenharia'], atinge:['altura','obra','industrial','eletrica'],
+   responsavel:'SESMT · com Engenharia',
+   multa:'De R$ 670,89 a R$ 6.708,59 por item (grau de infração 4, NR-28)',
+   penalidade:'Interdição de frente de trabalho em altura sem análise de risco documentada',
+   fonte:'gov.br/trabalho — Normas Regulamentadoras · NR-35',
+   vAnterior:'Análise de risco exigida sem requisito documental adicional para trabalho eventual.',
+   vNova:'Requisito documental adicional na análise que precede o trabalho eventual em altura.',
+   tipo:'Portaria', esfera:'Federal'},
+
+ esocial:{classes:['Departamento Pessoal','Segurança','RH'], atinge:['pessoal','*'],
+   responsavel:'Departamento Pessoal · insumo do SESMT',
+   multa:'R$ 636,17 por competência com informação omitida ou incorreta em evento de SST (art. 32-A da Lei 8.212/91)',
+   penalidade:'Rejeição do evento, pendência acumulada e inconsistência no histórico de saúde ocupacional usado em perícia',
+   fonte:'gov.br/esocial — Nota Técnica de leiaute',
+   vAnterior:'Evento de monitoramento da saúde sem o campo adicional.',
+   vNova:'Campo obrigatório acrescido ao evento; envio rejeitado sem preenchimento.',
+   tipo:'Nota Técnica', esfera:'Federal'},
+
+ irrf:{classes:['Departamento Pessoal','Tributária','Fiscal'], atinge:['pessoal','fiscal','*'],
+   responsavel:'Departamento Pessoal · conferência do Financeiro',
+   multa:'Multa isolada de 75% sobre a retenção não efetuada, com juros Selic',
+   penalidade:'Responsabilidade da fonte pagadora pelo tributo não retido e divergência na DIRF/EFD-Reinf',
+   fonte:'gov.br/receitafederal — legislação de imposto de renda retido na fonte',
+   vAnterior:'Tabela e faixas da competência anterior.',
+   vNova:'Faixas atualizadas com efeito na retenção da folha.',
+   tipo:'Legislação', esfera:'Federal'},
+
+ cbs:{classes:['Tributária','Fiscal','Contratos'], atinge:['fiscal','publico','privado','*'],
+   responsavel:'Financeiro · com assessoria contábil',
+   multa:'Conforme regime de transição; penalidade acessória por escrituração incorreta',
+   penalidade:'Glosa de crédito e refazimento de escrituração no período de transição',
+   fonte:'gov.br/receitafederal — Instrução Normativa RFB',
+   vAnterior:'Regime de PIS/Cofins e ISS sobre serviços de engenharia.',
+   vNova:'Transição para CBS e IBS com cronograma até 2033 e regra de crédito própria.',
+   tipo:'Instrução Normativa', esfera:'Federal'},
+
+ anac:{classes:['Jurídica'], atinge:[], responsavel:'—',
+   multa:'—', penalidade:'—', fonte:'in.gov.br · Resolução ANAC',
+   vAnterior:'—', vNova:'—', tipo:'Resolução', esfera:'Federal'},
+
+ pesca:{classes:['Ambiental'], atinge:[], responsavel:'—',
+   multa:'—', penalidade:'—', fonte:'in.gov.br · Portaria MPA',
+   vAnterior:'—', vNova:'—', tipo:'Portaria', esfera:'Federal'}
+};
+
+/* Fusão em leitura: enr(m) devolve a alteração com os campos novos. */
+function enr(m){ return Object.assign({}, m, ENRIQ[m.id] || {classes:[], atinge:[]}); }
+
+/* ─────────────────────────────────────────────────────────────
+   RADAR DE OPORTUNIDADES
+   Aderência não é chute: é calculada pelo cruzamento das etiquetas
+   da oportunidade com as etiquetas dos CNAEs cadastrados.
+   ───────────────────────────────────────────────────────────── */
+const OPORTUNIDADES = [
+ {id:'op1', tipo:'Licitação', origem:'PNCP', orgao:'Sabesp', uf:'SP',
+  titulo:'Pregão eletrônico — manutenção eletromecânica em elevatórias da RMSP',
+  valor:'R$ 18,4 mi', prazo:'12/08/2026', prazoDias:12, cliente:'sabesp',
+  tags:['eletrica','industrial','publico','confinado'],
+  detalhe:'Lote único, 24 meses, com equipe residente. Exige acervo em estação elevatória e atestado de capacidade técnica com no mínimo 60% do quantitativo.',
+  requisito:'Acervo CREA compatível · atestado técnico · regularidade fiscal e trabalhista',
+  acao:'Confirmar acervo de EEAB no CREA e reunir atestados antes da data limite.'},
+
+ {id:'op2', tipo:'Parada industrial', origem:'Cliente', orgao:'Bridgestone', uf:'SP',
+  titulo:'Parada programada de utilidades — janela de julho',
+  valor:'R$ 3,1 mi', prazo:'30/09/2026', prazoDias:61, cliente:'bridgestone',
+  tags:['industrial','mecanica','altura','privado'],
+  detalhe:'Escopo de manutenção mecânica e caldeiraria em janela de 18 dias. Cliente sinalizou antecipação da cotação para setembro.',
+  requisito:'Efetivo adicional treinado · plano de segurança da parada · seguro de responsabilidade',
+  acao:'Dimensionar efetivo e antecipar treinamento de integração, que é gargalo histórico.'},
+
+ {id:'op3', tipo:'Licitação', origem:'PNCP', orgao:'Prefeitura de Campinas', uf:'SP',
+  titulo:'Concorrência — modernização de rede de iluminação em distrito industrial',
+  valor:'R$ 26,7 mi', prazo:'28/08/2026', prazoDias:28, cliente:null,
+  tags:['eletrica','obra','altura','publico'],
+  detalhe:'Obra com prazo de 14 meses. Regime de contratação integrada, o que joga o risco de projeto para a contratada.',
+  requisito:'Capacidade financeira · engenheiro eletricista responsável · acervo em rede de distribuição',
+  acao:'Avaliar risco do regime integrado antes de decidir participação.'},
+
+ {id:'op4', tipo:'Incentivo fiscal', origem:'Sefaz-SP', orgao:'Governo do Estado de SP', uf:'SP',
+  titulo:'Crédito presumido de ICMS para serviços de engenharia em projeto de infraestrutura',
+  valor:'Até 8% da base', prazo:'31/10/2026', prazoDias:92, cliente:null,
+  tags:['fiscal','obra','publico'],
+  detalhe:'Aplicável a contratos de infraestrutura enquadrados em programa estadual. Exige habilitação prévia e regularidade fiscal plena.',
+  requisito:'Habilitação no programa · regularidade fiscal · contrato enquadrado',
+  acao:'Financeiro avaliar enquadramento dos contratos de saneamento em curso.'},
+
+ {id:'op5', tipo:'Financiamento', origem:'BNDES', orgao:'BNDES Finame', uf:'Nacional',
+  titulo:'Linha para aquisição de máquinas e equipamentos nacionais',
+  valor:'Até R$ 20 mi', prazo:'Fluxo contínuo', prazoDias:999, cliente:null,
+  tags:['industrial','mecanica','privado'],
+  detalhe:'Financiamento de equipamentos com credenciamento prévio. Relevante para renovação de frota de equipamentos de içamento e solda.',
+  requisito:'Cadastro em agente financeiro · garantia · plano de investimento',
+  acao:'Comparar custo efetivo com leasing antes de decidir.'},
+
+ {id:'op6', tipo:'Expansão industrial', origem:'Imprensa setorial', orgao:'AEGEA', uf:'SP',
+  titulo:'Anúncio de investimento em ampliação de ETE na região de Ribeirão Preto',
+  valor:'R$ 240 mi (obra total)', prazo:'Sondagem', prazoDias:180, cliente:'aegea',
+  tags:['obra','eletrica','industrial','privado'],
+  detalhe:'Investimento anunciado com início de obra previsto para o primeiro semestre seguinte. Janela para posicionamento antes da cotação formal.',
+  requisito:'Relacionamento comercial · capacidade de mobilização',
+  acao:'Comercial acionar contato na concessionária antes da abertura de cotação.'},
+
+ {id:'op7', tipo:'Edital de inovação', origem:'Finep', orgao:'Finep', uf:'Nacional',
+  titulo:'Chamada para eficiência energética em processos industriais',
+  valor:'R$ 1,5 mi por projeto', prazo:'15/09/2026', prazoDias:46, cliente:null,
+  tags:['eletrica','industrial','ambiental'],
+  detalhe:'Subvenção econômica para projeto com ganho energético mensurável. Aceita parceria com cliente industrial como interveniente.',
+  requisito:'Projeto técnico · parceria com indústria · contrapartida',
+  acao:'Avaliar parceria com cliente industrial já instalado.'}
+];
+
+/* ─────────────────────────────────────────────────────────────
+   INTELIGÊNCIA DE MERCADO
+   Indicador sem leitura é número solto. Cada um traz o que
+   significa para uma empresa de engenharia e manutenção.
+   ───────────────────────────────────────────────────────────── */
+const INDICADORES = [
+ {n:'Selic', v:'14,75%', d:0, u:'a.a.', s:'nt',
+  l:'Custo de capital de giro alto. Contrato longo sem cláusula de reajuste comprime margem.'},
+ {n:'IPCA 12m', v:'4,82%', d:-0.11, u:'', s:'am',
+  l:'Índice de reajuste da maioria dos contratos de manutenção. Abaixo da inflação de insumos técnicos.'},
+ {n:'PIB — serviços', v:'+2,1%', d:0.2, u:'', s:'vd',
+  l:'Demanda industrial estável. Sustenta o volume de manutenção contratada.'},
+ {n:'Dólar', v:'R$ 5,42', d:0.7, u:'', s:'am',
+  l:'Pressiona equipamento e instrumentação importada e peça de reposição.'},
+ {n:'Euro', v:'R$ 6,15', d:0.4, u:'', s:'nt',
+  l:'Relevante para componentes de automação de origem europeia.'},
+ {n:'Aço — vergalhão', v:'R$ 4.910/t', d:1.8, u:'', s:'am',
+  l:'Entra em estrutura metálica e caldeiraria. Alta corrói margem de contrato fechado.'},
+ {n:'Cobre', v:'US$ 9.480/t', d:2.4, u:'', s:'vm',
+  l:'Principal insumo de cabo e instalação elétrica. Alta relevante para escopo elétrico.'},
+ {n:'Alumínio', v:'US$ 2.610/t', d:0.9, u:'', s:'nt',
+  l:'Condutor e estrutura leve. Impacto moderado no custo direto.'},
+ {n:'Cimento', v:'R$ 42,30/sc', d:0.3, u:'', s:'nt',
+  l:'Peso menor no mix da Realtec, concentrado em obra civil de apoio.'},
+ {n:'Diesel', v:'R$ 6,18/L', d:1.1, u:'', s:'am',
+  l:'Mobilização de equipe e equipamento. Sensível em contrato com frente distante.'},
+ {n:'Energia — tarifa industrial', v:'R$ 0,58/kWh', d:0.6, u:'', s:'nt',
+  l:'Custo de canteiro e oficina. Bandeira tarifária muda o efeito no mês.'}
+];
+
+const MOVIMENTOS = [
+ {t:'Concorrente', o:'Empresa de manutenção industrial de médio porte', s:'am',
+  d:'Anunciou aquisição de prestadora regional de serviços elétricos com atuação em saneamento — sobreposição direta com dois contratos da Realtec.',
+  q:'Consolidação no segmento aumenta pressão de preço na próxima renovação.'},
+ {t:'Contrato', o:'Setor de saneamento', s:'vd',
+  d:'Novo bloco de concessões em preparação com previsão de investimento em ampliação de ETE e EEAB.',
+  q:'Amplia o mercado endereçável no escopo em que a Realtec já tem acervo.'},
+ {t:'Investimento', o:'Indústria química no interior de SP', s:'vd',
+  d:'Ampliação de planta anunciada com montagem eletromecânica prevista.',
+  q:'Oportunidade de montagem e, depois, de contrato de manutenção recorrente.'},
+ {t:'Econômico', o:'Insumos metálicos', s:'am',
+  d:'Alta acumulada de cobre e aço no trimestre acima do índice de reajuste contratual.',
+  q:'Contrato com reajuste por IPCA perde margem real. Rever cláusula na renovação.'},
+ {t:'Regulatório', o:'Contratação pública', s:'nt',
+  d:'Consolidação de exigências de conformidade em SST nos editais de saneamento.',
+  q:'Conformidade documental deixa de ser custo e passa a ser critério de habilitação.'}
+];
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOTOR DE ANÁLISE
+   Nada aqui é texto decorado à mão. Cliente impactado, veredito de CNAE
+   e indicador do painel são calculados a partir do cruzamento de
+   etiquetas — por isso continuam corretos quando alguém cadastra um
+   CNAE novo ou um cliente novo pela tela.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const inter = (a,b)=>(a||[]).filter(x=>(b||[]).includes(x));
+const univ  = m=>(m.atinge||[]).includes('*');
+
+/* ── Veredito por CNAE: SIM / PARCIALMENTE / NÃO, com justificativa ── */
+function veredito(m, cn){
+  const e = enr(m);
+  if(!e.atinge.length) return {v:'NÃO', c:'nt',
+    just: m.eixo==='OUTROS'
+      ? 'A publicação é de setor fora do perfil da empresa e não alcança nenhuma atividade exercida sob este CNAE.'
+      : `A alteração é do eixo ${rotEixo(e.eixo)} e não alcança atividade econômica exercida sob este CNAE.`};
+
+  const casa = inter(e.atinge, cn.tags);
+  const nomes = casa.map(t=>ETIQUETAS[t]).filter(Boolean).join(', ');
+
+  if(univ(e)) return {v:'SIM', c:'vd',
+    just:`Obrigação de alcance geral do empregador. Independe da atividade econômica: atinge todo CNAE em que haja empregado celetista${casa.length?`, com efeito reforçado em ${nomes.toLowerCase()}`:''}.`};
+
+  if(casa.length >= 2 || (cn.principal && casa.length >= 1)) return {v:'SIM', c:'vd',
+    just:`A atividade descrita neste CNAE envolve ${nomes.toLowerCase()}, exatamente o alcance da alteração${cn.principal?' — e trata-se do CNAE principal da empresa':''}.`};
+
+  if(casa.length === 1) return {v:'PARCIALMENTE', c:'am',
+    just:`Há sobreposição em ${nomes.toLowerCase()}, mas apenas em parte das atividades exercidas sob este CNAE. O efeito depende do escopo de cada contrato.`};
+
+  return {v:'NÃO', c:'nt',
+    just:`Nenhuma sobreposição entre o alcance da alteração e as atividades deste CNAE. Registrado como analisado e descartado.`};
+}
+
+function rotEixo(e){
+  return {SST:'Segurança do Trabalho', DP:'Departamento Pessoal', TRIBUTARIO:'Tributário',
+    OUTROS:'fora do perfil'}[e] || e || '—';
+}
+
+/* ── Clientes atingidos por uma alteração ── */
+function clientesDe(m){
+  const e = enr(m);
+  if(!e.atinge.length) return [];
+  return CLIENTES.filter(c=> univ(e) || inter(e.atinge, c.tags).length > 0);
+}
+
+/* ── Alterações que atingem um cliente ──
+   Respeita o arquivamento: item arquivado sai da carteira do cliente
+   junto com o resto do sistema, senão a ficha do cliente contradiz o painel. */
+function mudancasDe(c){
+  return MUDANCAS.filter(m=>{
+    if(arquivados.has(m.id)) return false;
+    const e = enr(m);
+    return e.atinge.length && (univ(e) || inter(e.atinge, c.tags).length > 0);
+  });
+}
+
+/* ── Aderência de uma oportunidade ao perfil de CNAE cadastrado ──
+   Duas perguntas, não uma. Cobertura: das capacidades que a oportunidade
+   exige, quantas a empresa tem? Profundidade: quantos dos CNAEs cadastrados
+   sustentam essa capacidade — um serviço amparado por um CNAE secundário
+   isolado é mais frágil do que outro que atravessa a empresa inteira.
+   'publico' e 'privado' ficam de fora da conta: descrevem a natureza do
+   contrato, não capacidade técnica, e inflariam toda oportunidade.        */
+const CAPACIDADE = t => t !== 'publico' && t !== 'privado';
+
+function aderencia(op){
+  const exige = (op.tags||[]).filter(CAPACIDADE);
+  const perfil = [...new Set(CNAES.flatMap(c=>c.tags))].filter(CAPACIDADE);
+  const casa = inter(exige, perfil);
+
+  const cobertura = casa.length / Math.max(1, exige.length);
+  const prof = CNAES.filter(c => inter(exige, c.tags).length > 0).length / Math.max(1, CNAES.length);
+  const pct = Math.round(Math.min(1, cobertura*0.7 + prof*0.3) * 100);
+
+  return {pct, casa,
+    faixa: pct>=80?'vd' : pct>=55?'am' : 'nt',
+    rot:   pct>=80?'Alta aderência' : pct>=55?'Aderência parcial' : 'Aderência baixa'};
+}
+
+/* ═══════════════ PAINEL EXECUTIVO — indicadores calculados ═══════════════ */
+/* A referência é a data real do dia, não uma data fixa no código. É por isso
+   que "Hoje" pode aparecer zerado: quando o acervo para de receber
+   publicação, o contador cai — e essa queda é a informação. Painel que
+   sempre mostra número parece vivo mesmo depois de ter morrido.          */
+const HOJE = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+function dt(s){ const [d,mo,a]=String(s).split('/').map(Number); return new Date(a,mo-1,d); }
+function diasDe(s){ return Math.round((HOJE() - dt(s)) / 86400000); }
+function diasAte(s){ if(!/\d{2}\/\d{2}\/\d{4}/.test(s)) return null;
+  return Math.round((dt(s) - HOJE()) / 86400000); }
+
+/* Idade do acervo: há quantos dias entrou a publicação mais recente.
+   É o sinal de que a coleta parou — o mais importante para quem decidiu
+   não abrir portal nenhum.                                              */
+function idadeAcervo(){
+  const ds = MUDANCAS.map(m=>diasDe(m.data)).filter(n=>!isNaN(n));
+  return ds.length ? Math.min(...ds) : null;
+}
+
+/* Três estados possíveis, e eles não podem ser confundidos:
+   coletou e não havia nada · coletou e há novidade · não coletou.
+   O terceiro é o perigoso, porque na tela ele se parece com o primeiro.  */
+function confianca(){
+  const idade = idadeAcervo();
+  if(ESTADO_COLETA === 'indeterminada') return {c:'vm', t:'Estado da coleta desconhecido',
+    d:`Não foi possível confirmar se o coletor rodou (${COLETA_ERRO || 'motivo não identificado'}). Enquanto isso não for confirmado, ausência de alerta nesta tela não significa ausência de novidade.`,
+    confiar:false};
+  if(ESTADO_COLETA !== 'ativa') return {c:'vm', t:'Coleta não ligada',
+    d:'Nenhuma publicação deste acervo veio de fonte oficial. Enquanto o coletor não estiver publicado e agendado no servidor, este sistema não substitui a consulta ao Diário Oficial.',
+    confiar:false};
+  if(idade===null) return {c:'vm', t:'Acervo vazio',
+    d:'A coleta está ligada, mas não há publicação registrada. Verifique o log da rotina.', confiar:false};
+  if(idade > 3) return {c:'vm', t:`Última publicação há ${idade} dias`,
+    d:'Silêncio longo demais para dia útil. Trate como coleta interrompida até confirmar o log da rotina — não como "nada mudou".',
+    confiar:false};
+  if(idade > 1) return {c:'am', t:`Última publicação há ${idade} dias`,
+    d:'Pode ser fim de semana ou feriado. Confira a última execução da rotina antes de concluir que não houve novidade.',
+    confiar:true};
+  return {c:'vd', t:'Acervo atualizado',
+    d:'A rotina rodou e o acervo recebeu publicação recente. Ausência de alerta aqui significa ausência de novidade, não falha de coleta.',
+    confiar:true};
+}
+
+function KPI(){
+  const r = rel();
+  const noPeriodo = d => MUDANCAS.filter(m=>diasDe(m.data) >= 0 && diasDe(m.data) <= d);
+  const acoes = r.filter(m=>m.seis).flatMap(m=>m.seis.fazer);
+  const prazos = r.map(m=>diasAte(m.prazo)).filter(x=>x!==null && x>=0);
+
+  return {
+    hoje: noPeriodo(0).length,
+    semana: noPeriodo(7).length,
+    mes: noPeriodo(30).length,
+    pendencias: pend().length,
+    criticas: crit().length,
+    alertas: r.length,
+    acoes: acoes.length,
+    acoesAbertas: CONFORM.pendencias,
+    clientes: [...new Set(r.flatMap(m=>clientesDe(m).map(c=>c.id)))].length,
+    setores: [...new Set(r.flatMap(m=>m.areas))].length,
+    normas: [...new Set(r.map(m=>m.norma))].length,
+    docs: CONFORM.documentos,
+    prazoProx: prazos.length ? Math.min(...prazos) : null,
+    /* tempo médio de adequação: da publicação ao prazo legal de cada item */
+    tma: (()=>{ const v=r.map(m=>{const a=diasAte(m.prazo); return a===null?null:a+diasDe(m.data);})
+      .filter(x=>x!==null); return v.length ? Math.round(v.reduce((a,b)=>a+b,0)/v.length) : 0; })(),
+    porClasse: (()=>{ const o={}; r.forEach(m=>enr(m).classes.forEach(c=>o[c]=(o[c]||0)+1)); return o; })(),
+    porNivel: (()=>{ const o={crit:0,alto:0,medio:0,info:0};
+      MUDANCAS.forEach(m=>o[m.nivel]=(o[m.nivel]||0)+1); return o; })()
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ROTINA AUTOMÁTICA DAS 07:00
+   O agendador é real: calcula a próxima janela, dispara sozinho quando o
+   horário chega com o sistema aberto e grava o log.
+   O que ele NÃO faz — e o sistema diz isso na tela em vez de fingir:
+   navegador não roda com a aba fechada. Coleta diária de verdade,
+   independente de alguém estar com o sistema aberto, exige o coletor
+   agendado no servidor (pg_cron + Edge Function no projeto Supabase que
+   este front já usa). Este agendador cobre a execução em tela e o
+   histórico; a coleta noturna é do servidor.
+   ═══════════════════════════════════════════════════════════════════════ */
+const ROTINA = {
+  hora: 7, minuto: 0,
+  estado: STORE.ler('rotina', {ultima:null, itens:0, relevantes:0, criticas:0, log:[], execucoes:0}),
+  timer: null,
+
+  proxima(){
+    const n = new Date(), p = new Date(n);
+    p.setHours(this.hora, this.minuto, 0, 0);
+    if(p <= n) p.setDate(p.getDate() + 1);
+    return p;
+  },
+  faltam(){
+    const ms = this.proxima() - new Date();
+    const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+    return `${h}h ${String(m).padStart(2,'0')}min`;
+  },
+  agendar(){
+    clearTimeout(this.timer);
+    const ms = this.proxima() - new Date();
+    this.timer = setTimeout(()=>{
+      this.executar(true).catch(e=>console.error('[CIL] rotina falhou', e));
+      this.agendar();
+    }, Math.min(ms, 2147483000));
+  },
+
+  /* C18 · O agendador só existe enquanto a aba existe.
+     Se ninguém abriu o sistema entre uma janela e outra, a rotina não
+     rodou — e a tela não pode sugerir que rodou. Esta função conta
+     quantas janelas das 07:00 passaram desde a última execução
+     registrada, para que a rotina possa dizer o que não fez. */
+  janelasPerdidas(){
+    if(!this.estado.ultima) return null;
+    const u = new Date(this.estado.ultima);
+    if(isNaN(u)) return null;
+    let n = 0;
+    const marco = new Date(u);
+    marco.setHours(this.hora, this.minuto, 0, 0);
+    if(marco <= u) marco.setDate(marco.getDate() + 1);
+    const agora = new Date();
+    while(marco <= agora && n < 400){ n++; marco.setDate(marco.getDate() + 1); }
+    return n;
+  },
+  gravar(){ STORE.gravar('rotina', this.estado); },
+
+  /* Passos do ciclo. Com sessão ativa, cada passo consulta o banco;
+     sem sessão, o passo roda sobre o acervo local e é marcado como tal. */
+  passos(){
+    return [
+      {t:'Consulta às fontes oficiais', d:`${FONTES.length} fontes · janela de 24 horas`},
+      {t:'Comparação com o acervo interno', d:`${MUDANCAS.length} registros conferidos por identificador e versão`},
+      {t:'Detecção de novidade, revogação e nova versão', d:'Diferença de texto entre versão anterior e vigente'},
+      {t:'Classificação por eixo e nível de risco', d:'Trabalhista, tributário, segurança, engenharia, ambiental, jurídico'},
+      {t:'Cruzamento com CNAEs cadastrados', d:`${CNAES.length} CNAEs avaliados`},
+      {t:'Cruzamento com clientes estratégicos', d:`${CLIENTES.length} clientes avaliados`},
+      {t:'Geração de análise técnica e checklist', d:'Resumo executivo, impacto, risco, prazo e responsável'},
+      {t:'Atualização de indicadores e painel', d:'Painel executivo, conformidade e linha do tempo'},
+      {t:'Registro em log encadeado', d:'Trilha somente de inserção, sem exclusão de histórico'},
+      {t:'Despacho de alerta crítico', d:'Só dispara quando há item crítico com pendência aberta'}
+    ];
+  },
+
+  async executar(automatica){
+    const ini = new Date();
+    const k = KPI();
+    this.estado.ultima = ini.toISOString();
+    this.estado.execucoes = (this.estado.execucoes||0) + 1;
+
+    /* O volume bruto lido no Diário só existe se houve coleta de verdade.
+       Antes este campo recebia um número aleatório para "parecer" cheio —
+       exatamente o tipo de mentira que um sistema de conformidade não pode
+       contar. Sem coletor, o campo fica vazio e a tela diz por quê.       */
+    this.estado.itens = null;
+    if(ESTADO_COLETA === 'ativa'){
+      try{
+        const r = await SB.chamar('/rest/v1/coleta?status=eq.sucesso&select=itens_lidos&order=iniciada_em.desc&limit=1');
+        const d = await r.json();
+        if(Array.isArray(d) && d.length) this.estado.itens = d[0].itens_lidos ?? null;
+      }catch(e){ /* mantém vazio: melhor sem número do que com número inventado */ }
+    }
+
+    this.estado.relevantes = rel().length;
+    this.estado.criticas = crit().filter(m=>!m.analisado).length;
+    this.estado.origem = ESTADO_COLETA === 'ativa' ? 'banco'
+                       : ESTADO_COLETA === 'indeterminada' ? 'acervo local (estado da coleta desconhecido)'
+                       : 'acervo local (sem coleta)';
+
+    const hh = ini.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const linha = {
+      h: hh, dia: ini.toLocaleDateString('pt-BR'),
+      modo: automatica ? 'automática · 07:00' : 'manual',
+      r: `${this.estado.itens===null?'volume não informado':numG(this.estado.itens)+' itens lidos'} · ${this.estado.relevantes} relevantes · ${this.estado.criticas} críticas pendentes`,
+      origem: this.estado.origem
+    };
+    this.estado.log = [linha, ...(this.estado.log||[])].slice(0, 40);
+    this.gravar();
+
+    if(this.estado.criticas > 0) this.alertar(k);
+    if(typeof render === 'function') render();
+    return linha;
+  },
+
+  alertar(k){
+    const f = document.getElementById('iaFala');
+    if(!f || iaAberta) return;
+    f.innerHTML = `<p>Rotina das 07:00 concluída. <b>${k.criticas} ${k.criticas===1?'alteração crítica':'alterações críticas'}</b>
+      com pendência aberta e ${k.clientes} ${k.clientes===1?'cliente atingido':'clientes atingidos'}.</p>
+      <div class="aq"><button class="s" onclick="fecharFala();ir('relatorio')">Ver relatório</button>
+      <button class="n" onclick="fecharFala()">Depois</button></div>`;
+    f.classList.add('on');
+    setTimeout(()=>{ if(f.classList.contains('on')) f.classList.remove('on'); }, 16000);
+  }
+};
+
+function rodarRotina(){
+  const bt = document.getElementById('btRotina');
+  if(bt){ bt.textContent = 'Executando…'; bt.disabled = true; }
+  setTimeout(()=>ROTINA.executar(false), 700);
+}
+
+/* ═══════════════ CADASTROS FEITOS NA TELA ═══════════════ */
+/* C9/C10 · O cadastro de CNAE é entrada livre que fica gravada no
+   navegador e volta para a tela em toda renderização. Sem escape, era
+   XSS persistente; e o botão Remover montava o código dentro de um
+   atributo onclick, então um apóstrofo no código quebrava o botão.
+   Agora: escape na leitura, remoção por índice, validação na escrita. */
+function addCnae(){
+  const c = document.getElementById('nCnae'), d = document.getElementById('nCnaeD');
+  const t = [...document.querySelectorAll('.tgC:checked')].map(x=>x.value)
+              .filter(v => Object.prototype.hasOwnProperty.call(ETIQUETAS, v));
+  const eEl = document.getElementById('cnaeErro');
+  const falha = msg => { eEl.textContent = msg; eEl.style.display='block'; };
+  const cod = (c.value||'').trim(), des = (d.value||'').trim();
+
+  if(!cod || !des) return falha('Informe o código e a descrição do CNAE.');
+  if(cod.length > 20) return falha('O código do CNAE tem no máximo 20 caracteres.');
+  if(des.length > 160) return falha('A descrição tem no máximo 160 caracteres.');
+  if(!/^[\d.\-\/]+$/.test(cod))
+    return falha('O código aceita apenas números e os separadores . - / — exemplo: 43.21-5/00.');
+  if(CNAES.some(x => x.c === cod)) return falha('Este CNAE já está cadastrado.');
+
+  CNAES = [...CNAES, {c:cod, d:des, principal:false, tags:t}];
+  STORE.gravar('cnaes', CNAES);
+  eEl.style.display='none'; c.value=''; d.value='';
+  render();
+}
+function removerCnae(i){
+  const n = Number(i);
+  if(!Number.isInteger(n) || n < 0 || n >= CNAES.length) return;
+  if(CNAES[n].principal) return;
+  CNAES = CNAES.filter((_,k) => k !== n);
+  STORE.gravar('cnaes', CNAES); render();
+}
+function restaurarCnae(){ CNAES = CNAE_BASE.slice(); STORE.gravar('cnaes', CNAES); render(); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TELAS NOVAS
+   Todas montadas com os mesmos componentes já existentes — .ct, .sec,
+   .lista, .li, .bl, .lin, .cli, .tag, .et, .nm. Nenhum seletor novo.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const numG = n => new Intl.NumberFormat('pt-BR').format(n);
+
+/* ─────────────────────────────────────────────────────────────
+   "POSSO CONFIAR NO QUE ESTOU VENDO?"
+   Para quem decidiu não abrir portal nenhum, esta é a pergunta que
+   importa. Tela sem alerta pode significar duas coisas opostas:
+   nada mudou, ou o coletor morreu. Enquanto o sistema não separar
+   as duas, silêncio não é informação — é risco.
+   ───────────────────────────────────────────────────────────── */
+function blocoConfianca(){
+  const c = confianca(), idade = idadeAcervo();
+  const ult = ROTINA.estado.ultima ? new Date(ROTINA.estado.ultima) : null;
+  return `<div class="ct" style="margin-bottom:14px"><div class="ct-in">
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <svg class="ic ic-g" style="color:var(--${c.c});flex:none;margin-top:1px">
+        <use href="#${c.confiar?'k-escudo':'k-alerta'}"/></svg>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:600;color:var(--${c.c})">${c.t}</div>
+        <p style="font-size:12.8px;color:var(--t-2);line-height:1.6;margin-top:3px">${c.d}</p>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin-top:14px">
+      ${[[COLETA_ATIVA?'Ligada':'Desligada','Coleta automática', COLETA_ATIVA?'':'vm'],
+         [idade===null?'—':idade+' d','Idade do acervo', idade!==null&&idade>3?'vm':''],
+         [ult?ult.toLocaleDateString('pt-BR'):'—','Última rotina', ult?'':'am'],
+         [FONTES.length,'Fontes cadastradas','']]
+        .map(([v,r,cc])=>`<div style="padding:11px 13px;border-radius:var(--r-m);background:var(--sup-2)">
+          <div class="num" style="font-size:16px;font-weight:700;letter-spacing:-.02em;${cc?`color:var(--${cc})`:''}">${v}</div>
+          <div style="font-size:11.5px;color:var(--t-2);margin-top:3px">${r}</div></div>`).join('')}
+    </div>
+  </div></div>`;
+}
+
+/* ─────────────────── PAINEL EXECUTIVO ─────────────────── */
+function vPainel(){
+  const k = KPI();
+  const box = (v,r,c)=>`<div style="padding:11px 13px;border-radius:var(--r-m);background:var(--sup-2)">
+    <div class="num" style="font-size:18px;font-weight:700;letter-spacing:-.02em;${c?`color:var(--${c})`:''}">${v}</div>
+    <div style="font-size:11.5px;color:var(--t-2);margin-top:3px">${r}</div></div>`;
+  const grade = its=>`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px">
+    ${its.map(([v,r,c])=>box(v,r,c)).join('')}</div>`;
+
+  const maxC = Math.max(1, ...Object.values(k.porClasse));
+
+  return `${avisoOrigem()}
+  <div class="cab"><h1>Painel executivo</h1>
+    <p>Leitura de uma tela para a diretoria. Todo número aqui é calculado a partir do acervo — nenhum é digitado.</p></div>
+
+  ${blocoConfianca()}
+
+  <div class="nums">
+    <button class="nm vm" onclick="ir('alertas')"><div class="v">${k.criticas}</div>
+      <div class="r"><span class="pt"></span>Críticas</div></button>
+    <button class="nm am" onclick="ir('alertas')"><div class="v">${k.pendencias}</div>
+      <div class="r"><span class="pt"></span>Aguardando análise</div></button>
+    <button class="nm nt" onclick="ir('clientes')"><div class="v">${k.clientes}</div>
+      <div class="r"><span class="pt"></span>Clientes impactados</div></button>
+    <button class="nm vd" onclick="ir('acoes')"><div class="v">${k.acoes}</div>
+      <div class="r"><span class="pt"></span>Ações geradas</div></button>
+  </div>
+
+  <section class="sec"><div class="sec-h"><h2>Volume por período</h2>
+    <span class="c">até ${HOJE().toLocaleDateString('pt-BR')}</span></div>
+    <div class="ct"><div class="ct-in">${grade([
+      [k.hoje,'Hoje'],[k.semana,'Últimos 7 dias'],[k.mes,'Últimos 30 dias'],
+      [k.alertas,'Com impacto'],[ign().length,'Sem impacto']])}</div></div></section>
+
+  <section class="sec"><div class="sec-h"><h2>Alcance da mudança</h2></div>
+    <div class="ct"><div class="ct-in">${grade([
+      [k.normas,'Normas atingidas'],[k.setores,'Setores impactados'],
+      [CNAES.length,'CNAEs avaliados'],[CLIENTES.length,'Clientes monitorados'],
+      [k.docs,'Documentos no acervo']])}</div></div></section>
+
+  <section class="sec"><div class="sec-h"><h2>Prazo e tempo de adequação</h2></div>
+    <div class="ct"><div class="ct-in">
+      ${grade([
+        [k.prazoProx===null?'—':k.prazoProx+' d','Prazo mais próximo', k.prazoProx!==null&&k.prazoProx<30?'vm':''],
+        [k.tma+' d','Tempo médio de adequação'],
+        [k.acoesAbertas,'Ações em aberto','am'],
+        [CONFORM.pct+'%','Conformidade']])}
+      <p style="font-size:12.5px;color:var(--t-2);line-height:1.6;margin-top:14px">
+        O tempo médio de adequação é a distância entre a publicação e o prazo legal de cada
+        alteração vigente — quanto menor, menos folga a operação tem para se ajustar.</p>
+    </div></div></section>
+
+  <section class="sec"><div class="sec-h"><h2>Distribuição por classificação</h2>
+    <span class="c">${Object.keys(k.porClasse).length} classes</span></div>
+    <div class="ct"><div class="ct-in">
+      ${Object.entries(k.porClasse).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`
+        <div style="display:flex;align-items:center;gap:11px;padding:7px 0">
+          <span style="font-size:12.8px;color:var(--t-2);width:150px;flex:none">${c}</span>
+          <span style="flex:1;height:6px;border-radius:99px;background:var(--sup-2);overflow:hidden;display:block">
+            <span style="display:block;height:100%;width:${(n/maxC*100).toFixed(0)}%;
+              border-radius:99px;background:var(--az)"></span></span>
+          <span class="num" style="font-size:12px;color:var(--t-3);width:18px;text-align:right">${n}</span>
+        </div>`).join('')}
+    </div></div></section>
+
+  <section class="sec"><div class="sec-h"><h2>Classificação de risco</h2></div>
+    <div class="lista">
+      ${[['crit','vm','Crítico','Autuação, interdição ou passivo imediato'],
+         ['alto','am','Alto','Prazo em curso com exposição relevante'],
+         ['medio','nt','Médio','Ajuste de processo, sem sanção direta'],
+         ['info','nt','Informativo','Registrado e descartado com motivo']]
+        .map(([n,c,r,d])=>`<div class="li">
+          <span class="et ${c}" style="padding:2px 6px"><span class="pt"></span></span>
+          <span class="li-t"><b>${r}</b><s>${d}</s></span>
+          <span class="num" style="font-size:12px;color:var(--t-3)">${k.porNivel[n]||0}</span></div>`).join('')}
+    </div></section>
+
+  <div class="bts">
+    <button class="bt pr" onclick="ir('relatorio')">Abrir relatório executivo
+      <svg class="ic ic-p"><use href="#k-dir"/></svg></button>
+    <button class="bt sc" onclick="ir('rotina')">Rotina das 07:00</button>
+  </div>`;
+}
+
+/* ─────────────────── CLIENTES ─────────────────── */
+function vClientes(){
+  const linha = c=>{
+    const ms = mudancasDe(c), cr = ms.filter(m=>m.nivel==='crit').length;
+    const et = cr ? ['vm', cr+' crítica'+(cr>1?'s':'')] : ms.length ? ['am', ms.length+' alteraç'+(ms.length>1?'ões':'ão')] : ['vd','sem impacto'];
+    return `<button class="li" onclick="ir('cliente','${c.id}')">
+      <span class="cli-a">${c.sigla}</span>
+      <span class="li-t"><b>${c.nome}</b><s>${c.setor} · ${c.uf} · ${c.contratos} contrato${c.contratos>1?'s':''}</s></span>
+      <span class="et ${et[0]}"><span class="pt"></span>${et[1]}</span>
+      <svg class="ic ic-p ch"><use href="#k-cheq"/></svg></button>`;
+  };
+  return `${avisoOrigem()}
+  <div class="cab"><h1>Clientes estratégicos</h1>
+    <p>Para cada alteração o sistema responde a mesma pergunta: isto atinge este cliente, e por quê.
+       O cruzamento é feito pelo escopo contratado, não pelo nome da empresa.</p></div>
+  <section class="sec"><div class="sec-h"><h2>Carteira monitorada</h2>
+    <span class="c">${CLIENTES.length}</span></div>
+    <div class="lista">${CLIENTES.map(linha).join('')}</div></section>
+  <p style="font-size:11.5px;color:var(--t-3);margin-top:4px;line-height:1.6">
+    Um cliente entra em alerta quando o escopo contratado com ele compartilha atividade com a
+    alteração publicada. Contrato público tende a converter norma em exigência de fiscalização
+    mais rápido que contrato privado.</p>`;
+}
+
+function vCliente(){
+  const c = CLIENTES.find(x=>x.id===alvo) || CLIENTES[0];
+  const ms = mudancasDe(c);
+  const cr = ms.filter(m=>m.nivel==='crit');
+  const acoes = ms.filter(m=>m.seis).flatMap(m=>m.seis.fazer);
+
+  return `<button class="voltar" onclick="ir('clientes')">
+    <svg class="ic ic-p"><use href="#k-esq"/></svg>Clientes</button>
+  <div class="cab">
+    <div class="ct-meta" style="margin-bottom:10px">
+      <span class="et ${c.criticidade==='alta'?'vm':'am'}"><span class="pt"></span>criticidade ${c.criticidade}</span>
+      <span>${c.setor}</span><span class="sep"></span><span>${c.uf}</span>
+      <span class="sep"></span><span>contrato até ${c.vigencia}</span></div>
+    <h1>${c.nome}</h1><p>${c.escopo}</p>
+  </div>
+
+  <div class="nums">
+    <div class="nm vm"><div class="v">${cr.length}</div>
+      <div class="r"><span class="pt"></span>Críticas</div></div>
+    <div class="nm am"><div class="v">${ms.length}</div>
+      <div class="r"><span class="pt"></span>Alterações</div></div>
+    <div class="nm nt"><div class="v">${acoes.length}</div>
+      <div class="r"><span class="pt"></span>Ações vinculadas</div></div>
+    <div class="nm vd"><div class="v">${c.frentes.length}</div>
+      <div class="r"><span class="pt"></span>Frentes ativas</div></div>
+  </div>
+
+  <div class="bl"><div class="bl-h"><span class="bl-n">1</span>
+    <strong>Existe alteração que impacta este cliente?</strong></div>
+    ${ms.length ? ms.map(m=>{
+      const e = enr(m);
+      const casa = univ(e) ? ['obrigação geral do empregador'] :
+        inter(e.atinge, c.tags).map(t=>ETIQUETAS[t].toLowerCase());
+      return `<div class="lin sim">
+        <svg class="ic ic-p mk"><use href="#k-ok"/></svg>
+        <b>${m.norma}</b><span>${m.titulo}<br>
+        <span style="color:var(--t-3);font-size:12px">Ponto de contato: ${casa.join(', ')}</span></span></div>`;
+    }).join('') : '<p style="color:var(--t-2);font-size:13.5px">Nenhuma alteração do acervo atual atinge o escopo contratado com este cliente.</p>'}
+  </div>
+
+  <div class="bl"><div class="bl-h"><span class="bl-n">2</span>
+    <strong>Existe exigência nova?</strong></div>
+    ${cr.length ? `<div class="av-risco vm"><svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+      <div><b>${cr.length} alteração${cr.length>1?'ões':''} crítica${cr.length>1?'s':''} em vigor</b>
+      <p>${cr.map(m=>m.norma).join(', ')} — exigível agora, com reflexo direto nas obrigações
+      documentais deste contrato.</p></div></div>` :
+      `<div class="motivo"><b>Nenhuma exigência nova de nível crítico.</b><br>
+      As alterações vinculadas a este cliente estão em prazo aberto.</div>`}
+    <div class="mini" style="margin-top:12px"><b>Exigências contratuais em vigor</b>
+      ${c.exigencias.map(e=>`<p style="margin-top:6px">· ${e}</p>`).join('')}</div>
+  </div>
+
+  <div class="bl"><div class="bl-h"><span class="bl-n">3</span>
+    <strong>Onde isso aparece na operação</strong></div>
+    <p>Frentes ativas em que a adequação precisa chegar:</p>
+    <div class="tags">${c.frentes.map(f=>`<span class="tag">${f}</span>`).join('')}</div>
+    <div class="cadeia">${c.tags.map(t=>`<span class="elo">${ETIQUETAS[t]}</span>`).join('')}</div>
+  </div>
+
+  <div class="impacto-emp">
+    <div class="h"><svg class="ic"><use href="#k-empresa"/></svg>
+      <strong>Leitura para a conta</strong></div>
+    <p>${c.nota}</p>
+  </div>
+
+  ${acoes.length?`<section class="sec" style="margin-top:22px">
+    <div class="sec-h"><h2>Ações que alcançam este cliente</h2><span class="c">${acoes.length}</span></div>
+    <div class="ct"><div class="ct-in">${acoes.map(f=>`<div class="tarefa">
+      <div class="cx" onclick="tick(this)"><svg class="ic ic-p"><use href="#k-tick"/></svg></div>
+      <div class="tf"><p>${f.t}</p><s>${f.r} · até ${f.p}</s></div></div>`).join('')}</div></div>
+  </section>`:''}`;
+}
+
+/* ─────────────────── CNAE ─────────────────── */
+function vCnae(){
+  const ms = MUDANCAS.filter(m=>m.temImpacto);
+  const et = v => v==='SIM'?'vd' : v==='PARCIALMENTE'?'am' : 'nt';
+
+  return `${avisoOrigem()}
+  <div class="cab"><h1>CNAEs monitorados</h1>
+    <p>Para cada alteração, cada CNAE recebe um veredito — SIM, PARCIALMENTE ou NÃO — com a
+       justificativa técnica. O cadastro é ilimitado: o que você incluir passa a ser avaliado
+       na mesma rodada.</p></div>
+
+  <section class="sec"><div class="sec-h"><h2>Cadastro</h2><span class="c">${CNAES.length}</span></div>
+    <div class="lista">${CNAES.map((cn,i)=>`<div class="li">
+      <span class="num" style="font-size:12px;color:var(--t-2);flex:none;width:88px">${esc(cn.c)}</span>
+      <span class="li-t"><b>${esc(cn.d)}</b>
+        <s>${cn.principal?'principal · ':''}${esc((cn.tags||[]).map(t=>ETIQUETAS[t]).filter(Boolean).join(' · '))||'sem etiqueta'}</s></span>
+      ${cn.principal?'<span class="et nt">principal</span>':
+        `<button class="cli-b" onclick="removerCnae(${i})">Remover</button>`}
+    </div>`).join('')}</div>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2>Incluir CNAE</h2></div>
+    <div class="bl">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+        <div><label style="display:block;font-size:12px;font-weight:600;color:var(--t-2);margin-bottom:6px">Código</label>
+          <input id="nCnae" placeholder="00.00-0/00"
+            style="width:100%;height:42px;padding:0 13px;border:1px solid var(--l-2);border-radius:var(--r-m);
+                   background:var(--sup-1);color:var(--t-1);font:inherit;font-size:14px;outline:none"></div>
+        <div><label style="display:block;font-size:12px;font-weight:600;color:var(--t-2);margin-bottom:6px">Descrição da atividade</label>
+          <input id="nCnaeD" placeholder="Instalação de sistemas de automação industrial"
+            style="width:100%;height:42px;padding:0 13px;border:1px solid var(--l-2);border-radius:var(--r-m);
+                   background:var(--sup-1);color:var(--t-1);font:inherit;font-size:14px;outline:none"></div>
+      </div>
+      <div style="margin-top:14px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--t-2);margin-bottom:8px">
+          Atividades exercidas sob este CNAE</label>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          ${Object.entries(ETIQUETAS).map(([k,v])=>`
+            <label class="tag" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 11px">
+              <input type="checkbox" class="tgC" value="${k}" style="margin:0;accent-color:var(--az)">${v}</label>`).join('')}
+        </div>
+        <p style="font-size:11.5px;color:var(--t-3);margin-top:9px">
+          São essas marcações que o sistema usa para decidir se uma norma alcança o CNAE.
+          Sem nenhuma marcação, o veredito será NÃO para tudo.</p>
+      </div>
+      <div id="cnaeErro" style="display:none;font-size:12.5px;color:var(--vm);margin-top:12px"></div>
+      <div class="bts">
+        <button class="bt pr" onclick="addCnae()">Incluir CNAE</button>
+        <button class="bt sc" onclick="restaurarCnae()">Restaurar cadastro original</button>
+      </div>
+    </div>
+  </section>
+
+  ${ms.map(m=>`<section class="sec">
+    <div class="sec-h"><h2>${m.norma}</h2>
+      <span class="c">${enr(m).tipo || 'Norma'}</span>
+      <button class="l" onclick="ir('det:${m.id}')">Abrir <svg class="ic ic-p"><use href="#k-dir"/></svg></button></div>
+    <div class="lista">${CNAES.map(cn=>{
+      const v = veredito(m, cn);
+      return `<div class="li" style="align-items:flex-start">
+        <span class="et ${et(v.v)}" style="flex:none;margin-top:2px"><span class="pt"></span>${v.v}</span>
+        <span class="li-t"><b class="num" style="font-size:12.5px">${cn.c}</b>
+          <s style="color:var(--t-2);font-size:12.5px;line-height:1.55;margin-top:4px">${v.just}</s></span></div>`;
+    }).join('')}</div>
+  </section>`).join('')}`;
+}
+
+/* ─────────────────── RADAR DE OPORTUNIDADES ─────────────────── */
+let filtroOp = 'todas';
+function setFiltroOp(f){ filtroOp=f; render(); }
+
+function vRadar(){
+  const tipos = [...new Set(OPORTUNIDADES.map(o=>o.tipo))];
+  const lista = (filtroOp==='todas' ? OPORTUNIDADES : OPORTUNIDADES.filter(o=>o.tipo===filtroOp))
+    .map(o=>({...o, ad:aderencia(o)}))
+    .sort((a,b)=> b.ad.pct - a.ad.pct || a.prazoDias - b.prazoDias);
+
+  const valorTotal = OPORTUNIDADES.filter(o=>/^R\$/.test(o.valor)).length;
+
+  return `${avisoOrigem()}
+  <div class="cab"><h1>Radar de oportunidades</h1>
+    <p>Licitações, incentivos, editais e movimentos de cliente ordenados por aderência ao perfil
+       técnico da Realtec. A aderência é calculada sobre os CNAEs cadastrados — muda quando o
+       cadastro muda.</p></div>
+
+  <div class="nums">
+    <div class="nm vd"><div class="v">${lista.filter(o=>o.ad.pct>=75).length}</div>
+      <div class="r"><span class="pt"></span>Alta aderência</div></div>
+    <div class="nm am"><div class="v">${OPORTUNIDADES.filter(o=>o.prazoDias<=30).length}</div>
+      <div class="r"><span class="pt"></span>Prazo em 30 dias</div></div>
+    <div class="nm nt"><div class="v">${OPORTUNIDADES.filter(o=>o.cliente).length}</div>
+      <div class="r"><span class="pt"></span>Em cliente atual</div></div>
+    <div class="nm nt"><div class="v">${valorTotal}</div>
+      <div class="r"><span class="pt"></span>Com valor estimado</div></div>
+  </div>
+
+  <div class="atalhos">
+    <button class="at ${filtroOp==='todas'?'on':''}" onclick="setFiltroOp('todas')">Todas
+      <b>${OPORTUNIDADES.length}</b></button>
+    ${tipos.map(t=>`<button class="at ${filtroOp===t?'on':''}" onclick="setFiltroOp('${t}')">${t}
+      <b>${OPORTUNIDADES.filter(o=>o.tipo===t).length}</b></button>`).join('')}
+  </div>
+
+  <section class="sec"><div class="sec-h"><h2>Oportunidades</h2><span class="c">${lista.length}</span></div>
+    ${lista.length ? lista.map(o=>{
+      const cli = o.cliente ? CLIENTES.find(c=>c.id===o.cliente) : null;
+      const urg = o.prazoDias <= 30;
+      return `<div class="ct"><div class="ct-in">
+        <div class="ct-meta">
+          <span class="et ${o.ad.faixa}"><span class="pt"></span>${o.ad.rot} · ${o.ad.pct}%</span>
+          ${COLETA_ATIVA?'':'<span class="et va">exemplo</span>'}
+          <span>${o.tipo}</span><span class="sep"></span>
+          <span>${o.orgao}</span><span class="sep"></span><span>${o.uf}</span>
+        </div>
+        <h3>${o.titulo}</h3>
+        <p class="rz">${o.detalhe}</p>
+        <div class="mini"><b>O que fazer</b><p>${o.acao}</p></div>
+        <div class="cadeia">${o.ad.casa.map(t=>`<span class="elo">${ETIQUETAS[t]}</span>`).join('')}</div>
+      </div>
+      <div class="ct-pe">
+        <span class="areas">${cli?`<span class="area">${cli.nome}</span>`:''}
+          <span class="area">${o.origem}</span></span>
+        <span class="pz ${urg?'urg':''}"><svg class="ic ic-p"><use href="#k-relogio"/></svg>${o.prazo}</span>
+        <span class="num" style="font-size:12.5px;font-weight:600;margin-left:auto">${o.valor}</span>
+      </div></div>`;
+    }).join('') : semItens('Nenhuma oportunidade neste filtro','Selecione outro tipo acima.')}
+  </section>
+
+  <div class="motivo"><b>Requisito comum a todas as licitações listadas.</b><br>
+    Regularidade fiscal e trabalhista, acervo técnico compatível e certidão negativa de débitos.
+    Pendência de conformidade em SST vira, cada vez mais, critério de habilitação — o que liga
+    este radar diretamente ao painel de alertas.</div>`;
+}
+
+/* ─────────────────── INTELIGÊNCIA DE MERCADO ─────────────────── */
+function vMercado(){
+  const seta = d => d>0 ? '▲' : d<0 ? '▼' : '—';
+  const cor  = (d,s) => s==='vm'?'var(--vm)' : s==='am'?'var(--am)' : s==='vd'?'var(--vd)' : 'var(--t-2)';
+
+  return `${avisoOrigem()}
+  <div class="cab"><h1>Inteligência de mercado</h1>
+    <p>Indicador sem leitura é número solto. Cada um vem com o que significa para uma empresa de
+       engenharia e manutenção — custo de insumo, custo de capital e demanda.</p></div>
+
+  <section class="sec"><div class="sec-h"><h2>Indicadores</h2>
+    <span class="c">${INDICADORES.length}</span></div>
+    <div class="lista">${INDICADORES.map(i=>`<div class="li" style="align-items:flex-start">
+      <span class="li-t">
+        <b>${i.n}</b>
+        <s style="color:var(--t-2);font-size:12.5px;line-height:1.55;margin-top:4px">${i.l}</s></span>
+      <span style="flex:none;text-align:right">
+        <span class="num" style="display:block;font-size:14px;font-weight:700;letter-spacing:-.02em">${i.v}</span>
+        <span class="num" style="display:block;font-size:11px;margin-top:3px;color:${cor(i.d,i.s)}">
+          ${seta(i.d)} ${i.d===0?'estável':Math.abs(i.d).toFixed(1).replace('.',',')+'%'}</span></span>
+    </div>`).join('')}</div>
+    <p style="font-size:11.5px;color:var(--t-3);margin-top:9px">
+      A variação é do período mais recente disponível na fonte. Preço de commodity move margem de
+      contrato fechado antes de aparecer no índice de reajuste.</p>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2>Movimentos do setor</h2>
+    <span class="c">${MOVIMENTOS.length}</span></div>
+    ${MOVIMENTOS.map(m=>`<div class="ct"><div class="ct-in">
+      <div class="ct-meta">
+        <span class="et ${m.s}"><span class="pt"></span>${m.t}</span>
+        ${COLETA_ATIVA?'':'<span class="et va">exemplo</span>'}
+        <span>${m.o}</span></div>
+      <p class="rz">${m.d}</p>
+      <div class="mini"><b>Leitura para a Realtec</b><p>${m.q}</p></div>
+    </div></div>`).join('')}
+  </section>
+
+  <div class="impacto-emp">
+    <div class="h"><svg class="ic"><use href="#k-empresa"/></svg>
+      <strong>O que os números dizem juntos</strong></div>
+    <p>Custo de insumo metálico subindo acima do índice contratual, custo de capital alto e demanda
+    industrial estável desenham o mesmo cenário: volume preservado, margem sob pressão. O ponto de
+    decisão está na cláusula de reajuste dos contratos em renovação, não no volume de vendas.</p>
+  </div>`;
+}
+
+
+/* ─────────────────── ROTINA DAS 07:00 ─────────────────── */
+function vRotina(){
+  const e = ROTINA.estado;
+  const ult = e.ultima ? new Date(e.ultima) : null;
+  const perdidas = ROTINA.janelasPerdidas();
+
+  return `<div class="cab"><h1>Rotina das 07:00</h1>
+    <p>Ciclo diário de coleta, comparação, classificação e despacho de alerta. Dez passos, sempre
+       na mesma ordem, sempre registrados.</p></div>
+
+  ${blocoConfianca()}
+
+  <div class="ct" style="margin-bottom:14px"><div class="ct-in"
+    style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <svg class="ic ic-g" style="color:${ult?'var(--vd)':'var(--t-3)'};flex:none">
+      <use href="#${ult?'k-ok':'k-relogio'}"/></svg>
+    <div style="flex:1;min-width:180px">
+      <div style="font-size:13.5px;font-weight:600">
+        ${ult ? `Última execução às ${ult.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} de ${ult.toLocaleDateString('pt-BR')}`
+              : 'Ainda não executada neste navegador'}</div>
+      <p style="font-size:12.8px;color:var(--t-2);margin-top:2px">
+        Próxima janela em ${ROTINA.faltam()} · ${e.execucoes||0} execuç${(e.execucoes||0)===1?'ão':'ões'} registrada${(e.execucoes||0)===1?'':'s'}</p>
+    </div>
+    <button class="bt pr" id="btRotina" onclick="rodarRotina()">Executar agora</button>
+  </div></div>
+
+  ${perdidas ? `<div class="av-risco vm" style="margin-bottom:18px">
+    <svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+    <div><b>${perdidas} ${perdidas===1?'janela das 07:00 passou':'janelas das 07:00 passaram'} sem execução</b>
+      <p style="color:var(--t-1);margin-top:4px">
+        Este agendador só roda com o sistema aberto no navegador. Entre
+        ${esc(ult.toLocaleDateString('pt-BR'))} e hoje, ninguém deixou a aba de pé no horário —
+        então ${perdidas===1?'esse ciclo não aconteceu':'esses ciclos não aconteceram'}.
+        O que aparece nas telas continua sendo o acervo da última execução, não o de hoje.</p>
+      <p style="color:var(--t-2);margin-top:6px;font-size:12.5px">
+        Coleta que não depende de alguém estar com o sistema aberto exige o coletor agendado no
+        servidor. Enquanto isso não existir, a rotina diária é manual: abrir o sistema e executar.</p></div>
+  </div>` : ''}
+
+  ${ult ? `<div class="nums">
+    <div class="nm nt"><div class="v">${e.itens===null?'—':numG(e.itens)}</div>
+      <div class="r"><span class="pt"></span>Itens lidos</div></div>
+    <div class="nm am"><div class="v">${e.relevantes}</div>
+      <div class="r"><span class="pt"></span>Relevantes</div></div>
+    <div class="nm vm"><div class="v">${e.criticas}</div>
+      <div class="r"><span class="pt"></span>Críticas pendentes</div></div>
+    <div class="nm vd"><div class="v">${FONTES.length}</div>
+      <div class="r"><span class="pt"></span>Fontes cadastradas</div></div>
+  </div>
+  ${e.itens===null?`<p style="font-size:11.5px;color:var(--t-3);margin:-14px 0 20px;line-height:1.6">
+    "Itens lidos" fica vazio porque esse número só existe se houve varredura real do Diário.
+    O sistema não preenche esse campo por estimativa.</p>`:''}` : ''}
+
+  <div class="av-risco am" style="margin-bottom:18px">
+    <svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+    <div><b>O navegador não executa com a aba fechada</b>
+    <p>Este agendador dispara a rotina quando dá 07:00 com o sistema aberto, e guarda o histórico.
+       Para a coleta acontecer todo dia às 07:00 independente de alguém estar com o sistema aberto,
+       o gatilho precisa morar no servidor — no projeto Supabase que este front já usa, é um
+       <span class="num">pg_cron</span> chamando a Edge Function de coleta. Enquanto isso não estiver
+       publicado, o sistema continua avisando que o conteúdo é exemplo.</p></div>
+  </div>
+
+  <section class="sec"><div class="sec-h"><h2>Passos do ciclo</h2>
+    <span class="c">${ROTINA.passos().length}</span></div>
+    <div class="lista">${ROTINA.passos().map((p,i)=>`<div class="li">
+      <span class="bl-n" style="flex:none">${i+1}</span>
+      <span class="li-t"><b>${p.t}</b><s>${p.d}</s></span></div>`).join('')}</div>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2>Fontes consultadas na janela</h2>
+    <span class="c">${FONTES.length}</span></div>
+    <div class="lista">${FONTES.map(([n,q])=>`<div class="li">
+      <svg class="ic ic-p" style="color:var(--vd);flex:none"><use href="#k-ok"/></svg>
+      <span class="li-t"><b style="font-weight:400">${n}</b></span>
+      <span class="num" style="font-size:11.5px;color:var(--t-3)">${q}</span></div>`).join('')}</div>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2>Histórico de execuções</h2>
+    <span class="c">${(e.log||[]).length}</span></div>
+    ${(e.log||[]).length ? `<div class="lista">${e.log.map(l=>`<div class="li">
+      <span class="num" style="font-size:11.5px;color:var(--t-3);flex:none;width:44px">${l.h}</span>
+      <span class="li-t"><b style="font-weight:400">${l.r}</b>
+        <s>${l.dia} · ${l.modo} · origem: ${l.origem}</s></span></div>`).join('')}</div>`
+    : semItens('Sem execução registrada','Use “Executar agora” para rodar o ciclo e criar o primeiro registro.')}
+    <p style="font-size:11.5px;color:var(--t-3);margin-top:9px">
+      O histórico nunca é apagado por sobrescrita — cada execução entra como registro novo.</p>
+  </section>`;
+}
+
+/* ─────────────────── RELATÓRIO EXECUTIVO ─────────────────── */
+function vRelatorio(){
+  const k = KPI(), r = rel(), c = crit(), p = pend();
+  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const futuras = r.filter(m=>{ const d=diasAte(m.prazo); return d!==null && d>0; })
+                   .sort((a,b)=>diasAte(a.prazo)-diasAte(b.prazo));
+  const vigentes = r.filter(m=>m.prazo==='Em vigor');
+  const acoes = r.filter(m=>m.seis).flatMap(m=>m.seis.fazer.map(f=>({...f, n:m.norma})));
+  const porResp = acoes.reduce((o,a)=>{(o[a.r]=o[a.r]||[]).push(a); return o;},{});
+  const clientesAtingidos = [...new Set(r.flatMap(m=>clientesDe(m).map(x=>x.id)))]
+    .map(id=>CLIENTES.find(x=>x.id===id));
+
+  const B=(n,t,html)=>`<div class="bl"><div class="bl-h"><span class="bl-n">${n}</span>
+    <strong>${t}</strong></div>${html}</div>`;
+
+  return `${avisoOrigem()}
+  <div class="cab"><h1>Relatório executivo</h1>
+    <p>${hoje} · gerado a partir do estado atual do acervo. Feito para ser lido pela diretoria em
+       dois minutos e anexado a ata.</p></div>
+
+  ${B(1,'Resumo do dia', `<p>O acervo registra ${r.length} alterações com impacto identificado para a
+    Realtec, das quais ${c.length} são críticas e ${p.length} ainda aguardam análise. O alcance chega
+    a ${k.clientes} de ${CLIENTES.length} clientes estratégicos e ${k.setores} setores internos.
+    ${k.prazoProx!==null ? `O prazo mais próximo vence em ${k.prazoProx} dias.` :
+      'Nenhum prazo futuro em curso — o que está aberto já é exigível.'}</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin-top:14px">
+      ${[[k.criticas,'Críticas','vm'],[k.pendencias,'Pendentes','am'],[k.clientes,'Clientes',''],
+         [k.acoes,'Ações',''],[CONFORM.pct+'%','Conformidade','']]
+        .map(([v,t,cc])=>`<div style="padding:11px 13px;border-radius:var(--r-m);background:var(--sup-2)">
+          <div class="num" style="font-size:18px;font-weight:700;${cc?`color:var(--${cc})`:''}">${v}</div>
+          <div style="font-size:11.5px;color:var(--t-2);margin-top:3px">${t}</div></div>`).join('')}
+    </div>`)}
+
+  ${B(2,'Mudanças críticas', c.length ? c.map(m=>{
+    const e=enr(m);
+    return `<div class="lin sim"><svg class="ic ic-p mk"><use href="#k-alerta"/></svg>
+      <b>${m.norma}</b><span>${m.titulo}<br>
+      <span style="color:var(--t-3);font-size:12px">${e.responsavel} · ${m.prazo} · sanção: ${e.multa}</span></span></div>`;
+  }).join('') : '<p>Nenhuma alteração crítica em aberto no período.</p>')}
+
+  ${B(3,'Mudanças importantes', r.filter(m=>m.nivel==='alto').length ?
+    r.filter(m=>m.nivel==='alto').map(m=>`<div class="lin sim">
+      <svg class="ic ic-p mk"><use href="#k-ok"/></svg><b>${m.norma}</b>
+      <span>${m.titulo} — prazo ${m.prazo}.</span></div>`).join('')
+    : '<p>Nenhuma alteração de nível importante no período.</p>')}
+
+  ${B(4,'Vigências futuras', futuras.length ? futuras.map(m=>`<div class="lin sim">
+      <svg class="ic ic-p mk"><use href="#k-relogio"/></svg><b>${m.norma}</b>
+      <span>Entra em vigor em ${m.prazo} — faltam ${diasAte(m.prazo)} dias.</span></div>`).join('')
+    : '<p>Nenhuma vigência futura mapeada. Todas as alterações do acervo já são exigíveis.</p>')
+    + (vigentes.length?`<div class="motivo" style="margin-top:12px">
+      <b>Já exigível hoje:</b> ${vigentes.map(m=>m.norma).join(', ')}. Sem período de tolerância.</div>`:'')}
+
+  ${B(5,'Clientes atingidos', clientesAtingidos.length ? clientesAtingidos.map(cl=>{
+      const ms=mudancasDe(cl);
+      return `<div class="cli"><span class="cli-a">${cl.sigla}</span>
+        <span class="cli-t"><b>${cl.nome}</b>
+        <s>${ms.length} alteração${ms.length>1?'ões':''} · ${cl.contratos} contrato${cl.contratos>1?'s':''} · até ${cl.vigencia}</s></span>
+        <button class="cli-b" onclick="ir('cliente','${cl.id}')">Abrir</button></div>`;
+    }).join('') : '<p>Nenhum cliente atingido pelas alterações do período.</p>')}
+
+  ${B(6,'Pendências e responsáveis', Object.entries(porResp).map(([resp,its])=>`
+      <div class="lin sim"><svg class="ic ic-p mk"><use href="#k-users"/></svg>
+      <b>${resp}</b><span>${its.length} ação${its.length>1?'ões':''} atribuída${its.length>1?'s':''} —
+      prazo mais próximo em ${its.map(i=>i.p).sort()[0]}.</span></div>`).join(''))}
+
+  ${B(7,'Checklist de adequação', acoes.map(a=>`<div class="tarefa">
+      <div class="cx" onclick="tick(this)"><svg class="ic ic-p"><use href="#k-tick"/></svg></div>
+      <div class="tf"><p>${a.t}</p><s>${a.n} · ${a.r} · até ${a.p}</s></div></div>`).join(''))}
+
+  ${B(8,'Recomendação', `<p>Priorizar o encerramento das ${c.length} pendências críticas antes de
+    abrir frente nas de prazo futuro — é a pendência crítica que derruba o índice de conformidade e
+    que aparece em auditoria de cliente. Na sequência, tratar as vigências de prazo mais curto.</p>
+    <p>Do lado comercial, ${OPORTUNIDADES.filter(o=>o.prazoDias<=30).length} oportunidades no radar
+    vencem em até 30 dias e dependem de regularidade documental para habilitação — o mesmo acervo
+    que está pendente aqui é o que habilita lá.</p>`)}
+
+  <div class="impacto-emp">
+    <div class="h"><svg class="ic"><use href="#k-empresa"/></svg><strong>Conclusão técnica</strong></div>
+    <p>${c.length ? `Situação de atenção: há ${c.length} alteração${c.length>1?'ões':''} crítica${c.length>1?'s':''}
+      já exigível${c.length>1?'is':''}, com ${k.clientes} clientes no alcance. O risco não é
+      teórico — é de autuação e de habilitação em contrato.`
+      : 'Ambiente regulatório sob controle: nenhuma alteração crítica em aberto no período.'}
+      ${p.length ? ` ${p.length} análise${p.length>1?'s':''} ainda depende${p.length>1?'m':''} de validação humana antes de virar decisão.` : ''}
+      Confirme cada dispositivo na fonte oficial antes de formalizar qualquer providência.</p>
+  </div>
+
+  <div class="bts">
+    <button class="bt pr" onclick="window.print()">Imprimir ou salvar em PDF</button>
+    <button class="bt sc" onclick="ir('painel')">Voltar ao painel</button>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   IA CORPORATIVA
+   As perguntas de rotina da diretoria não são respondidas por texto
+   guardado: são calculadas do estado do sistema no momento da pergunta.
+   Se uma alteração for arquivada, a resposta muda junto.
+   ═══════════════════════════════════════════════════════════════════════ */
+const IA_CORP = {
+  hoje(){
+    const k=KPI(), n=k.semana;
+    return {t:'O que mudou',
+      x:`Na janela dos últimos 7 dias o acervo registrou ${n} publicaç${n===1?'ão':'ões'}, das quais
+         ${rel().length} têm impacto identificado e ${ign().length} foram descartadas com motivo registrado.
+         ${pend().length ? `${pend().length} ainda aguardam análise.` : 'Nenhuma aguarda análise.'}`,
+      r: crit().length ? {n:'vm', t:`${crit().length} crítica${crit().length>1?'s':''} em aberto`,
+           d:crit().map(m=>`${m.norma} — ${m.titulo}`).join('. ')+'.'}
+         : {n:'am', t:'Nenhuma crítica em aberto', d:'As alterações do período estão em prazo aberto ou já resolvidas.'},
+      ir:'painel', irT:'Abrir painel executivo'};
+  },
+  urgencia(){
+    const k=KPI(), c=crit();
+    return {t:'Existe urgência',
+      x: c.length ? `Sim. ${c.length} alteração${c.length>1?'ões':''} crítica${c.length>1?'s':''} já
+          exigível${c.length>1?'is':''}: ${c.map(m=>m.norma).join(', ')}. Não há período de tolerância —
+          a fiscalização pode autuar hoje.`
+        : `Não há urgência de nível crítico. ${k.prazoProx!==null?`O prazo mais próximo vence em ${k.prazoProx} dias.`:''}`,
+      r: c.length ? {n:'vm', t:'Exigível agora', d:c.map(m=>`${m.norma}: ${enr(m).penalidade}`).join(' ')}
+                  : {n:'am', t:'Sem urgência imediata', d:'Prazos em curso, com folga para adequação.'},
+      ir:'alertas', irT:'Ver alertas'};
+  },
+  clientes(){
+    const at = [...new Set(rel().flatMap(m=>clientesDe(m).map(c=>c.id)))].map(id=>CLIENTES.find(c=>c.id===id));
+    return {t:'Impacto em clientes',
+      x:`${at.length} de ${CLIENTES.length} clientes estratégicos estão no alcance das alterações
+         vigentes: ${at.map(c=>c.nome).join(', ')}. O cruzamento é feito pelo escopo contratado —
+         cada cliente só entra se a atividade contratada com ele tocar o alcance da norma.`,
+      r:{n:'am', t:'Onde isso aparece primeiro',
+         d:'Em contrato público a norma vira exigência de fiscalização mais rápido. Sabesp e AEGEA concentram esse risco.'},
+      ir:'clientes', irT:'Abrir carteira de clientes'};
+  },
+  tributario(){
+    const t = MUDANCAS.filter(m=>enr(m).classes.includes('Tributária')||enr(m).classes.includes('Fiscal'));
+    return {t:'Alterações tributárias',
+      x: t.length ? `${t.length} no acervo: ${t.map(m=>`${m.norma} (${m.titulo.toLowerCase()})`).join('; ')}.`
+        : 'Nenhuma alteração tributária no acervo atual.',
+      r:{n:'am', t:'Ponto de atenção', d:'A transição CBS/IBS segue até 2033 com obrigações crescentes. A fase atual é de teste, sem recolhimento efetivo, mas com exigência de destaque na nota.'},
+      ir:'det:cbs', irT:'Abrir análise da transição'};
+  },
+  engenharia(){
+    const e = MUDANCAS.filter(m=>enr(m).classes.includes('Engenharia')||m.areas.includes('Engenharia'));
+    return {t:'Alterações de engenharia',
+      x: e.length ? `${e.length} alteraç${e.length>1?'ões':'ão'} alcança${e.length>1?'m':''} a
+         engenharia: ${e.map(m=>m.norma).join(', ')}. O efeito recai sobre procedimento de obra,
+         análise de risco e PGR por frente — não apenas sobre o programa da sede.`
+        : 'Nenhuma alteração com efeito direto sobre engenharia no acervo atual.',
+      r:{n:'am', t:'Multiplicação por frente',
+         d:'Uma metodologia única atende toda a empresa, mas o inventário de risco é por frente. É aí que o prazo aperta.'},
+      ir:'det:nr35', irT:'Abrir NR-35'};
+  },
+  hojefazer(){
+    const a = rel().filter(m=>m.seis).flatMap(m=>m.seis.fazer.map(f=>({...f,n:m.norma})))
+      .sort((x,y)=>x.p.localeCompare(y.p)).slice(0,6);
+    return {t:'O que precisa ser atualizado',
+      x:`As ${a.length} ações de prazo mais próximo, na ordem em que vencem. O plano completo tem
+         ${rel().filter(m=>m.seis).flatMap(m=>m.seis.fazer).length} ações.`,
+      lista:a, r:{n:'am', t:'Documentos que mudam junto',
+         d:'PGR, PCMSO, LTCAT, PPP, APR, inventário de riscos, procedimentos operacionais e treinamentos — a mesma alteração costuma alcançar vários deles.'},
+      ir:'acoes', irT:'Abrir plano de ação'};
+  },
+  mercado(){
+    const alta = INDICADORES.filter(i=>i.s==='vm'||i.s==='am');
+    return {t:'Cenário de mercado',
+      x:`${alta.length} indicadores em pressão: ${alta.map(i=>`${i.n} (${i.v})`).join(', ')}.
+         Custo de insumo metálico sobe acima do índice de reajuste contratual, o que comprime margem
+         em contrato fechado antes de aparecer em qualquer índice oficial.`,
+      r:{n:'am', t:'Onde isso dói',
+         d:'Contrato longo reajustado por IPCA com escopo elétrico intensivo em cobre. A cláusula de reajuste é o ponto de decisão na renovação.'},
+      ir:'mercado', irT:'Abrir inteligência de mercado'};
+  },
+  radar(){
+    const urg = OPORTUNIDADES.filter(o=>o.prazoDias<=30).map(o=>({...o,ad:aderencia(o)}));
+    return {t:'Oportunidades',
+      x:`${OPORTUNIDADES.length} no radar, ${urg.length} com prazo em até 30 dias.
+         ${urg.length?`A de maior aderência é ${urg.sort((a,b)=>b.ad.pct-a.ad.pct)[0].titulo.toLowerCase()}.`:''}`,
+      r:{n:'am', t:'Habilitação depende de conformidade',
+         d:'Editais de saneamento vêm consolidando exigência documental de SST. A pendência do painel de alertas é a mesma que barra a habilitação.'},
+      ir:'radar', irT:'Abrir radar de oportunidades'};
+  }
+};
+
+function iaTurnoCorp(k){
+  const r = IA_CORP[k]();
+  return `<div class="msg-a">
+    <div class="qm"><svg class="ic ic-p"><use href="#k-ia"/></svg>${r.t}
+      <span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0">calculado do acervo</span></div>
+    <div class="tx">${r.x}</div>
+    ${r.lista?`<div style="margin-top:12px">${r.lista.map(a=>`<div class="tarefa">
+      <div class="cx" onclick="tick(this)"><svg class="ic ic-p"><use href="#k-tick"/></svg></div>
+      <div class="tf"><p>${a.t}</p><s>${a.n} · ${a.r} · até ${a.p}</s></div></div>`).join('')}</div>`:''}
+    ${r.r?`<div class="av-risco ${r.r.n}" style="margin-top:12px">
+      <svg class="ic ic-g i"><use href="#k-alerta"/></svg>
+      <div><b>${r.r.t}</b><p>${r.r.d}</p></div></div>`:''}
+    <button class="atalho-ia" style="margin-top:12px" onclick="fecharIa();ir('${r.ir}')">
+      ${r.irT} →</button>
+    <div class="conf-x"><div class="fx"><b class="f-alto">Alto</b><s>0,90</s></div>
+      <p>Resposta derivada do próprio acervo — os números conferem com o painel no momento da
+      pergunta. A confiança não cobre o conteúdo das fontes originais, que segue exigindo
+      conferência oficial.</p></div>
+  </div>`;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ANÁLISE TÉCNICA — blocos 6 a 10 do detalhe
+   Continuam a mesma sequência numerada e o mesmo componente .bl das cinco
+   perguntas originais. Nada foi retirado; o que havia continua no lugar.
+   ═══════════════════════════════════════════════════════════════════════ */
+function blocosExtras(m, B){
+  const e  = enr(m);
+  const cs = clientesDe(m);
+  const vd = CNAES.map(cn => ({cn, v:veredito(m, cn)}));
+  const sim = vd.filter(x=>x.v.v==='SIM').length;
+  const par = vd.filter(x=>x.v.v==='PARCIALMENTE').length;
+  const etV = v => v==='SIM'?'vd' : v==='PARCIALMENTE'?'am' : 'nt';
+  const prazoD = diasAte(m.prazo);
+
+  const linhaMeta = (r,v)=>`<div class="lin sim" style="align-items:center">
+    <svg class="ic ic-p mk" style="opacity:0"><use href="#k-ok"/></svg>
+    <b>${r}</b><span>${v}</span></div>`;
+
+  return `
+  ${B(6,'Como isto se classifica?', `
+    <div class="tags" style="margin-top:0">
+      ${e.classes.map(c=>`<span class="tag">${c}</span>`).join('')}</div>
+    <div style="margin-top:14px">
+      ${linhaMeta('Eixo', rotEixo(m.eixo))}
+      ${linhaMeta('Instrumento', `${e.tipo || '—'} · esfera ${e.esfera || '—'}`)}
+      ${linhaMeta('Órgão', m.orgao)}
+      ${linhaMeta('Publicação', m.data)}
+      ${linhaMeta('Prazo', prazoD===null ? `${m.prazo} — sem período de tolerância`
+        : `${m.prazo} · faltam ${prazoD} dias`)}
+      ${linhaMeta('Responsável', e.responsavel || '—')}
+      ${linhaMeta('Nível de risco', m.nivel==='crit'?'🔴 Crítico':m.nivel==='alto'?'🟠 Alto':
+        m.nivel==='medio'?'🟡 Médio':'🟢 Informativo')}
+    </div>`)}
+
+  ${B(7,'Quais clientes são atingidos?', cs.length ? `
+    <p>${cs.length} de ${CLIENTES.length} clientes estratégicos estão no alcance desta alteração.
+       O critério é o escopo contratado com cada um, não o porte ou o setor.</p>
+    <div style="margin-top:12px">${cs.map(c=>{
+      const casa = univ(e) ? 'obrigação geral do empregador'
+        : inter(e.atinge, c.tags).map(t=>ETIQUETAS[t].toLowerCase()).join(', ');
+      return `<div class="cli"><span class="cli-a">${c.sigla}</span>
+        <span class="cli-t"><b>${c.nome}</b><s>${casa}</s></span>
+        <button class="cli-b" onclick="ir('cliente','${c.id}')">Abrir</button></div>`;
+    }).join('')}</div>`
+    : '<p>Nenhum cliente estratégico da carteira é atingido por esta alteração.</p>')}
+
+  ${B(8,'Afeta os CNAEs da empresa?', `
+    <p>${sim} de ${CNAES.length} CNAEs cadastrados respondem SIM${par?`, ${par} parcialmente`:''}.
+       O veredito é recalculado sempre que o cadastro muda.</p>
+    <div style="margin-top:12px">${vd.map(({cn,v})=>`
+      <div class="lin ${v.v==='NÃO'?'nao':'sim'}" style="align-items:flex-start">
+        <span class="et ${etV(v.v)}" style="flex:none;margin-top:1px;width:auto;font-size:11px;line-height:1.4">
+          <span class="pt"></span>${v.v}</span>
+        <span style="flex:1"><b style="display:block;font-size:12.5px;font-weight:600;width:auto"
+          class="num">${cn.c}</b>${v.just}</span></div>`).join('')}</div>
+    <div class="bts"><button class="bt sc" onclick="ir('cnae')">
+      Abrir cadastro de CNAEs <svg class="ic ic-p"><use href="#k-dir"/></svg></button></div>`)}
+
+  ${e.vAnterior && e.vAnterior !== '—' ? B(9,'O que muda no texto?', `
+    <div class="lei" style="border-left-color:var(--vm)"><p>${e.vAnterior}</p>
+      <div class="fn">Redação anterior</div></div>
+    <div class="lei" style="border-left-color:var(--vd)"><p>${e.vNova}</p>
+      <div class="fn">Redação vigente</div></div>
+    <div class="cadeia"><span class="elo">Fonte: ${e.fonte}</span></div>
+    <div class="bts"><button class="bt sc" onclick="ir('comparador')">
+      Abrir comparador <svg class="ic ic-p"><use href="#k-diff"/></svg></button></div>`) : ''}
+
+  ${e.multa && e.multa !== '—' ? B(10,'Qual a sanção?', `
+    <div class="mini" style="margin-top:0"><b>Multa</b><p>${e.multa}</p></div>
+    <div class="mini"><b>Penalidade e efeito colateral</b><p>${e.penalidade}</p></div>
+    <p style="font-size:12px;color:var(--t-3);margin-top:11px;line-height:1.6">
+      Valores e enquadramentos de multa mudam por portaria e por grau de infração.
+      Confirme na fonte oficial antes de usar este número em decisão ou em defesa.</p>`) : ''}`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PARTIDA DA EXPANSÃO
+   ═══════════════════════════════════════════════════════════════════════ */
+/* C19 · Partida.
+   A ordem importa: o estado da coleta precisa ser conhecido antes de a
+   IA falar sozinha, senão ela comenta um acervo que talvez não exista.
+   Nenhuma etapa pode derrubar a seguinte — daí os catch individuais. */
+try{ ROTINA.agendar(); }catch(e){ console.error('[CIL] agendador não iniciou', e); }
+
 render();
-carregarSessao().then(verificarColeta);
-setTimeout(iaProativa, 2600);
+
+carregarSessao()
+  .catch(e => console.error('[CIL] falha ao carregar sessão', e))
+  .then(() => verificarColeta())
+  .catch(e => console.error('[CIL] falha ao verificar coleta', e))
+  .finally(() => setTimeout(iaProativa, 2600));
+
+/* Sessão renovada também quando a aba volta ao primeiro plano: quem deixa
+   o sistema aberto o dia inteiro voltava a uma tela com token vencido. */
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState !== 'visible' || !SB.tk()) return;
+  SB.renovar().then(est => { if(est === 'ok') verificarColeta(); });
+});
 </script>
 </body>
 </html>
